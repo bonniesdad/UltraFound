@@ -1,0 +1,96 @@
+-- Credits Tab Content - Same pattern and content as UltraHardcore Credits.md / CreditsTab
+function UltraFound_InitializeCreditsTab(tabContents)
+  if not tabContents or not tabContents[3] then return end
+  if tabContents[3].initialized then return end
+  tabContents[3].initialized = true
+
+  local contentBackground = CreateFrame('Frame', nil, tabContents[3], 'BackdropTemplate')
+  contentBackground:SetPoint('TOP', tabContents[3], 'TOP', 0, -60)
+  contentBackground:SetPoint('LEFT', tabContents[3], 'LEFT', 10, 0)
+  contentBackground:SetPoint('RIGHT', tabContents[3], 'RIGHT', -10, 0)
+  contentBackground:SetPoint('BOTTOM', tabContents[3], 'BOTTOM', 0, -25)
+  contentBackground:SetBackdrop({
+    bgFile = 'Interface\\DialogFrame\\UI-DialogBox-Background',
+    edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
+    tile = true,
+    tileSize = 64,
+    edgeSize = 16,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+  })
+  contentBackground:SetBackdropColor(0.1, 0.1, 0.1, 0.95)
+  contentBackground:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
+  local aboutAuthorFrame = UHC_CreateAboutAuthorSection(
+    contentBackground, 'TOP', contentBackground, 'TOP', 0, -20, 360
+  )
+
+  local familyTitle = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
+  familyTitle:SetPoint('TOPLEFT', aboutAuthorFrame, 'BOTTOMLEFT', 0, 30)
+  familyTitle:SetText('Ultra Family Addons')
+  familyTitle:SetTextColor(0.922, 0.871, 0.761)
+
+  local ADDON_BOX_SIZE = 80
+  local ADDON_BOX_GAP = 12
+  local ADDON_TITLE_GAP = 6
+  local addonTitles = { 'Ultra Hardcore', 'Ultra Statistics', 'Ultra Found', 'Ultra Challenges' }
+  local BONNIE_BG = 'Interface\\AddOns\\UltraFound\\Textures\\bonnie0.png'
+  local contentW = 380
+  local numAddons = 4
+  local rowWidth = (ADDON_BOX_SIZE * numAddons) + (ADDON_BOX_GAP * (numAddons - 1))
+  local rowStartX = (contentW - rowWidth) / 2 + 10
+
+  local addonRowBottom = familyTitle
+
+  for i = 1, numAddons do
+    local colX = rowStartX + (i - 1) * (ADDON_BOX_SIZE + ADDON_BOX_GAP)
+
+    local titleLabel = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
+    titleLabel:SetPoint('TOP', familyTitle, 'BOTTOM', 0, -ADDON_TITLE_GAP)
+    titleLabel:SetPoint('LEFT', contentBackground, 'LEFT', colX, 0)
+    titleLabel:SetWidth(ADDON_BOX_SIZE)
+    titleLabel:SetJustifyH('CENTER')
+    titleLabel:SetText(addonTitles[i])
+    titleLabel:SetTextColor(0.922, 0.871, 0.761)
+
+    local box = CreateFrame('Frame', nil, contentBackground, 'BackdropTemplate')
+    box:SetSize(ADDON_BOX_SIZE, ADDON_BOX_SIZE)
+    box:SetPoint('TOP', titleLabel, 'BOTTOM', 0, -ADDON_TITLE_GAP)
+    box:SetPoint('LEFT', contentBackground, 'LEFT', colX, 0)
+    local tex = box:CreateTexture(nil, 'BACKGROUND')
+    tex:SetAllPoints(box)
+    tex:SetTexture(BONNIE_BG)
+    tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    box:SetBackdrop({
+      edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
+      edgeSize = 12,
+      insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    box:SetBackdropBorderColor(0.6, 0.5, 0.35, 0.9)
+
+    addonRowBottom = box
+  end
+
+  local joinDeveloperText = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
+  joinDeveloperText:SetPoint('TOP', addonRowBottom, 'BOTTOM', 0, -30)
+  joinDeveloperText:SetText(
+    'Join the developers\' Discord community and Twitch channel to help \nsupport us and have your say on the future of this addon!'
+  )
+  joinDeveloperText:SetJustifyH('CENTER')
+  joinDeveloperText:SetTextColor(0.95, 0.95, 0.9)
+  joinDeveloperText:SetWidth(360)
+  joinDeveloperText:SetNonSpaceWrap(true)
+
+  local discordButton = UHC_CreateDiscordInviteButton(
+    contentBackground, 'TOP', joinDeveloperText, 'BOTTOM', 0, -10, 220, 24, 'Discord Invite Link'
+  )
+  discordButton:ClearAllPoints()
+  discordButton:SetPoint('TOP', joinDeveloperText, 'BOTTOM', 0, -10)
+  discordButton:SetPoint('CENTER', tabContents[3], 'CENTER', 0, 0)
+
+  local twitchButton = UHC_CreateTwitchInviteButton(
+    contentBackground, 'TOP', discordButton, 'BOTTOM', 0, 0, 220, 28, 'Twitch Channel'
+  )
+  twitchButton:ClearAllPoints()
+  twitchButton:SetPoint('TOP', discordButton, 'BOTTOM', 0, 0)
+  twitchButton:SetPoint('CENTER', tabContents[3], 'CENTER', 0, 0)
+end
