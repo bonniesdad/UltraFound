@@ -16,42 +16,7 @@ function IsAllowedByGroupList(name)
   return false
 end
 
-function IsAllowedByGuildList(name)
-  local normalizedTarget = NormalizeName(name)
-  if not normalizedTarget then
-    return false
-  end
 
-  if _G.UHC_GuildRoster and _G.UHC_GuildRoster.isReady and _G.UHC_GuildRoster.namesSet then
-    return _G.UHC_GuildRoster.namesSet[normalizedTarget] == true
-  end
-
-  if _G.UHC_RequestGuildRoster then
-    _G.UHC_RequestGuildRoster()
-  end
-
-  local numGuildMembers = GetNumGuildMembers and GetNumGuildMembers() or 0
-  for j = 1, numGuildMembers do
-    local guildName = GetGuildRosterInfo(j)
-    local normalizedGuildName = NormalizeName(guildName)
-    if normalizedGuildName and normalizedGuildName == normalizedTarget then
-      return true
-    end
-  end
-  return false
-end
-
--- Helper: treat players in guild "U L T R A" as Guild Found
-function IsUltraGuildMember()
-  if C_GameRules and C_GameRules.IsHardcoreActive and not C_GameRules.IsHardcoreActive() then
-    return false
-  end
-  local guildName = GetGuildInfo and GetGuildInfo('player')
-  if not guildName then
-    return false
-  end
-  return guildName == 'U L T R A'
-end
 
 local tradeOverlay = nil
 
@@ -74,7 +39,7 @@ local function EnsureTradeOverlay()
   bg:SetColorTexture(0, 0, 0, 0.4)
   local text = tradeOverlay:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightLarge')
   text:SetPoint('CENTER')
-  text:SetText('Validating Guild Found and Status...')
+  text:SetText('Validating Group Found and Status...')
   tradeOverlay.text = text
   return tradeOverlay
 end
@@ -113,24 +78,16 @@ frame:RegisterEvent('AUCTION_HOUSE_SHOW')
 frame:RegisterEvent('MAIL_INBOX_UPDATE')
 
 frame:SetScript('OnEvent', function(self, event, ...)
-  local inGuildFound =
-    ((GLOBAL_SETTINGS and GLOBAL_SETTINGS.guildSelfFound) or IsUltraGuildMember())
   local inGroupFound = GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupSelfFound
-
-  if not (inGuildFound or inGroupFound) then return end
+  if not inGroupFound then return end
 
   if event == 'MAIL_INBOX_UPDATE' then
     for i = GetInboxNumItems(), 1, -1 do
       local _, _, sender, _, _, _, _, _, _, _, _, isGM = GetInboxHeaderInfo(i)
       if sender and not isGM then
-        local allowed = false
-        if inGuildFound then
-          allowed = IsAllowedByGuildList(sender)
-        elseif inGroupFound then
-          allowed = IsAllowedByGroupList(sender)
-        end
+        local allowed = IsAllowedByGroupList(sender)
         if not allowed then
-          local reason = inGuildFound and 'not in my guild' or 'not on my Group Found list'
+          local reason = 'not on my Group Found list'
           print(
             '|cffff0000[Ultra Found]|r|cffffff00 Mail from ' .. sender .. ' blocked - ' .. reason .. '.|r'
           )
@@ -139,15 +96,20 @@ frame:SetScript('OnEvent', function(self, event, ...)
       end
     end
   elseif event == 'TRADE_SHOW' then
+    -- Show overlay while we validate the trade target against the Group Found list
+    currentTradeValidation = { cancelled = false }
+    local overlay = EnsureTradeOverlay()
+    if overlay and overlay.text then
+      overlay.text:SetText('Validating Group Found restrictions...')
+      overlay:Show()
+    end
+
     local targetName = GetUnitName('npc', true)
-    if not targetName then return end
-    if inGuildFound then
-      PrintRestrictionMessage('Trade with ' .. targetName .. ' in Guild Found mode.')
-      if not IsAllowedByGuildList(targetName) then
-        CancelTradeForReason('Trade with ' .. targetName .. ' cancelled - not in my guild.')
-        return
-      end
-    elseif inGroupFound then
+    if not targetName then
+      ResetTradeValidation()
+      return
+    end
+    if inGroupFound then
       if not IsAllowedByGroupList(targetName) then
         CancelTradeForReason(
           'Trade with ' .. targetName .. ' cancelled - not on my Group Found list.'
@@ -155,10 +117,12 @@ frame:SetScript('OnEvent', function(self, event, ...)
         return
       end
     end
+
+    -- Target is allowed; hide the overlay so the player can trade normally
+    ResetTradeValidation()
   elseif event == 'AUCTION_HOUSE_SHOW' then
-    local modeLabel = inGuildFound and 'Guild Found' or 'Group Found'
     print(
-      '|cffff0000[Ultra Found]|r|cffffff00 Auction House blocked - ' .. modeLabel .. ' mode enabled.|r'
+      '|cffff0000[Ultra Found]|r|cffffff00 Auction House blocked - Group Found mode enabled.|r'
     )
     if C_Timer and C_Timer.After then
       C_Timer.After(0.1, function()

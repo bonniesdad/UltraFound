@@ -4,7 +4,7 @@ UltraFound_PATCH_NOTES = { {
   date = '2026-02-03',
   notes = {
     'Initial Release',
-    '• Self Found, Group Found, and Guild Found playthrough support.',
+    '• Group Found playthrough support.',
     '• X Found Mode tab with Self Found, Group Found, and Guild Found options.',
     '• Info and Credits tabs with same look and feel as Ultra Hardcore.',
   },
