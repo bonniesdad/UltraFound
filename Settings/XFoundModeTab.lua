@@ -1,80 +1,198 @@
 local TEXTURE_PATH = 'Interface\\AddOns\\UltraFound\\Textures'
 
+-- Local state for input fields so we can enable/disable them after confirmation
+local groupInputs = {}
+local confirmButton
+local addPartyButton
+local statusText
+
+local function IsGroupLocked()
+  return GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundLocked
+end
+
+local function SetInputsEnabled(enabled)
+  for _, box in ipairs(groupInputs) do
+    if enabled then
+      box:Enable()
+    else
+      box:Disable()
+    end
+  end
+  if confirmButton then
+    if enabled then
+      confirmButton:Enable()
+    else
+      confirmButton:Disable()
+    end
+  end
+  if addPartyButton then
+    if enabled then
+      addPartyButton:Enable()
+    else
+      addPartyButton:Disable()
+    end
+  end
+end
+
+local function LoadExistingGroupIntoInputs()
+  local names = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+  for i, box in ipairs(groupInputs) do
+    box:SetText(names[i] or '')
+  end
+end
+
+local function PopulateFromParty()
+  if IsGroupLocked() then return end
+
+  local collected = {}
+
+  -- Include the player first so the form always shows them
+  local playerName = UnitName and UnitName('player')
+  if playerName then
+    table.insert(collected, playerName)
+  end
+
+  -- Then party members
+  for i = 1, 4 do
+    local unit = 'party' .. i
+    local name = UnitName and UnitName(unit)
+    if name and name ~= '' then
+      table.insert(collected, name)
+    end
+  end
+
+  if #collected == 0 then
+    print('|cffffd000[Ultra Found]|r No party members found to add.')
+    return
+  end
+
+  for i, box in ipairs(groupInputs) do
+    box:SetText(collected[i] or '')
+  end
+end
+
+local function ConfirmGroup()
+  if not GLOBAL_SETTINGS then
+    print('|cffffd000[Ultra Found]|r Settings not loaded. Try again in a moment.')
+    return
+  end
+
+  if IsGroupLocked() then
+    print('|cffffd000[Ultra Found]|r Group Found is already locked for this character.')
+    return
+  end
+
+  local names = {}
+  for _, box in ipairs(groupInputs) do
+    local text = box:GetText() or ''
+    text = text:gsub('^%s+', ''):gsub('%s+$', '')
+    if text ~= '' then
+      table.insert(names, text)
+    end
+  end
+
+  if #names == 0 then
+    print('|cffffd000[Ultra Found]|r Please enter at least one character name before confirming the group.')
+    return
+  end
+
+  GLOBAL_SETTINGS.groupFoundNames = names
+  GLOBAL_SETTINGS.groupSelfFound = true
+  GLOBAL_SETTINGS.guildSelfFound = false
+  GLOBAL_SETTINGS.groupFoundLocked = true
+
+  if SaveCharacterSettings then
+    SaveCharacterSettings(GLOBAL_SETTINGS)
+  end
+
+  print(
+    '|cff00ff00[Ultra Found]|r Group Found confirmed. Trading and mail will be restricted to your Group Found list.'
+  )
+
+  if statusText then
+    statusText:SetText('Group Found is locked for this character.\nThese names cannot be changed.')
+    statusText:SetTextColor(0.9, 0.7, 0.2)
+  end
+
+  SetInputsEnabled(false)
+end
+
 function UltraFound_InitializeXFoundModeTab(tabContents)
   if not tabContents or not tabContents[1] then return end
   if tabContents[1].initialized then return end
   tabContents[1].initialized = true
 
   local content = tabContents[1]
-  local contentWidth = 400
-  -- Extra top offset so banners sit below the tab bar (only this tab needs it)
-  local topOffset = 50
-  local padding = 10
-  local bannerGap = 8
-  local contentHeight = 560 - topOffset
-  local bannerHeight = (contentHeight - (2 * padding) - (2 * bannerGap)) / 3
 
-  -- Three banners stacked: Self Found, Group Found, Guild Found
-  local bannerConfigs = {
-    {
-      key = 'self',
-      label = 'Self Found',
-      texture = nil,
-      backdropColor = { 0.15, 0.2, 0.15, 0.95 },
-      borderColor = { 0.4, 0.5, 0.4, 0.9 },
-    },
-    {
-      key = 'group',
-      label = 'Group Found',
-      texture = TEXTURE_PATH .. '\\group-found-banner.png',
-      borderColor = { 0.5, 0.5, 0.5, 0.9 },
-    },
-    {
-      key = 'guild',
-      label = 'Guild Found',
-      texture = TEXTURE_PATH .. '\\guild-found-banner.png',
-      borderColor = { 0.5, 0.5, 0.5, 0.9 },
-    },
-  }
+  local title = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
+  title:SetPoint('TOP', content, 'TOP', 0, -60)
+  title:SetText('Group Found Setup')
+  title:SetTextColor(0.922, 0.871, 0.761)
 
-  local prevBanner
-  for i, cfg in ipairs(bannerConfigs) do
-    local banner = CreateFrame('Frame', nil, content, 'BackdropTemplate')
-    banner:SetHeight(bannerHeight)
-    banner:SetPoint('LEFT', content, 'LEFT', padding, 0)
-    banner:SetPoint('RIGHT', content, 'RIGHT', -padding, 0)
-    if prevBanner then
-      banner:SetPoint('TOP', prevBanner, 'BOTTOM', 0, -bannerGap)
-    else
-      banner:SetPoint('TOP', content, 'TOP', 0, -topOffset - padding)
-    end
-    prevBanner = banner
+  local description = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
+  description:SetPoint('TOP', title, 'BOTTOM', 0, -10)
+  description:SetWidth(380)
+  description:SetJustifyH('CENTER')
+  description:SetText(
+    'Choose the characters you will adventure with on this run.\n\n' ..
+    'Trading and mail will be restricted to the names you confirm below.\n' ..
+    'Once confirmed, this list cannot be changed on this character.'
+  )
+  description:SetTextColor(0.9, 0.9, 0.9)
 
-    if cfg.texture then
-      local tex = banner:CreateTexture(nil, 'BACKGROUND')
-      tex:SetAllPoints(banner)
-      tex:SetTexture(cfg.texture)
-      tex:SetTexCoord(0, 1, 0, 1)
-    end
+  -- Create input boxes
+  local NUM_FIELDS = 5
+  local startY = -130
+  local fieldGap = 32
 
-    banner:SetBackdrop({
-      bgFile = cfg.texture and nil or 'Interface\\Buttons\\WHITE8x8',
-      edgeFile = 'Interface\\Buttons\\WHITE8x8',
-      tile = false,
-      tileSize = 0,
-      edgeSize = 2,
-      insets = { left = 0, right = 0, top = 0, bottom = 0 },
-    })
-    if cfg.texture then
-      banner:SetBackdropColor(0, 0, 0, 0.4)
-    else
-      banner:SetBackdropColor(cfg.backdropColor[1], cfg.backdropColor[2], cfg.backdropColor[3], cfg.backdropColor[4])
-    end
-    banner:SetBackdropBorderColor(cfg.borderColor[1], cfg.borderColor[2], cfg.borderColor[3], cfg.borderColor[4])
+  for i = 1, NUM_FIELDS do
+    local label = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
+    label:SetPoint('TOPLEFT', content, 'TOPLEFT', 40, startY - (i - 1) * fieldGap)
+    label:SetText('Character ' .. i .. ':')
+    label:SetTextColor(0.8, 0.8, 0.8)
 
-    local label = banner:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
-    label:SetPoint('CENTER', banner, 'CENTER', 0, 0)
-    label:SetText(cfg.label)
-    label:SetTextColor(0.922, 0.871, 0.761)
+    local box = CreateFrame('EditBox', nil, content, 'InputBoxTemplate')
+    box:SetSize(220, 24)
+    box:SetAutoFocus(false)
+    box:SetPoint('LEFT', label, 'RIGHT', 10, 0)
+    box:SetMaxLetters(64)
+    box:SetText('')
+
+    table.insert(groupInputs, box)
+  end
+
+  -- Status text (lock information)
+  statusText = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightSmall')
+  statusText:SetPoint('TOP', content, 'TOP', 0, startY - NUM_FIELDS * fieldGap - 10)
+  statusText:SetWidth(380)
+  statusText:SetJustifyH('CENTER')
+  statusText:SetTextColor(0.7, 0.7, 0.7)
+
+  -- Buttons
+  confirmButton =
+    CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
+  confirmButton:SetSize(160, 24)
+  confirmButton:SetPoint('TOP', statusText, 'BOTTOM', 0, -16)
+  confirmButton:SetText('Confirm Group')
+  confirmButton:SetScript('OnClick', ConfirmGroup)
+
+  addPartyButton =
+    CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
+  addPartyButton:SetSize(140, 22)
+  addPartyButton:SetPoint('TOP', confirmButton, 'BOTTOM', 0, -6)
+  addPartyButton:SetText('Add Party Members')
+  addPartyButton:SetScript('OnClick', PopulateFromParty)
+
+  -- Initialize from existing data
+  LoadExistingGroupIntoInputs()
+
+  if IsGroupLocked() then
+    statusText:SetText('Group Found is locked for this character.\nThese names cannot be changed.')
+    statusText:SetTextColor(0.9, 0.7, 0.2)
+    SetInputsEnabled(false)
+  else
+    statusText:SetText('You can edit this list until you press Confirm Group.')
+    statusText:SetTextColor(0.7, 0.9, 0.7)
+    SetInputsEnabled(true)
   end
 end
