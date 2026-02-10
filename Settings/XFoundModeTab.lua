@@ -138,7 +138,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   description:SetJustifyH('CENTER')
   description:SetText(
     'Choose the characters you will adventure with on this run.\n\n' ..
-    'Trading and mail will be restricted to the names you confirm below.\n' ..
+    'Trading and mail will be restricted to the names you confirm below.\n\n' ..
     'Once confirmed, this list cannot be changed on this character.'
   )
   description:SetTextColor(0.9, 0.9, 0.9)

@@ -25,13 +25,13 @@ function UltraFound_InitializeCreditsTab(tabContents)
   )
 
   local familyTitle = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
-  familyTitle:SetPoint('TOPLEFT', aboutAuthorFrame, 'BOTTOMLEFT', 0, 30)
+  familyTitle:SetPoint('TOP', aboutAuthorFrame, 'BOTTOM', 0, 30)
   familyTitle:SetText('Ultra Family Addons')
   familyTitle:SetTextColor(0.922, 0.871, 0.761)
 
   local ADDON_BOX_SIZE = 80
   local ADDON_BOX_GAP = 12
-  local ADDON_TITLE_GAP = 6
+  local ADDON_TITLE_GAP = 12
   -- Only show the currently released addons in the Ultra family.
   local addonTitles = { 'Ultra HC', 'Ultra Stats', 'Ultra Found' }
   -- Specific icons for each addon
@@ -65,14 +65,14 @@ function UltraFound_InitializeCreditsTab(tabContents)
     local tex = box:CreateTexture(nil, 'BACKGROUND')
     tex:SetTexture(addonTextures[i])
     tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    if i == 1 then
-      -- Ultra Hardcore icon: keep full size in the square
-      tex:SetAllPoints(box)
-    else
+    -- if i == 1 then
+    --   -- Ultra Hardcore icon: keep full size in the square
+    --   tex:SetAllPoints(box)
+    -- else
       -- Ultra Statistics and Ultra Found: scale down slightly within the square
       tex:SetPoint('CENTER', box, 'CENTER', 0, 0)
-      tex:SetSize(ADDON_BOX_SIZE * 0.8, ADDON_BOX_SIZE * 0.8)
-    end
+      tex:SetSize(ADDON_BOX_SIZE * 0.9, ADDON_BOX_SIZE * 0.9)
+    -- end
     box:SetBackdrop({
       edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
       edgeSize = 12,
@@ -86,7 +86,7 @@ function UltraFound_InitializeCreditsTab(tabContents)
   local joinDeveloperText = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
   joinDeveloperText:SetPoint('TOP', addonRowBottom, 'BOTTOM', -95, -30)
   joinDeveloperText:SetText(
-    'Join the developers\' Discord community and Twitch channel to help \nsupport us and have your say on the future of this addon!'
+    'Join the developers\' Discord community and Twitch channel to help support us and have your say on the future of this addon!'
   )
   joinDeveloperText:SetJustifyH('CENTER')
   joinDeveloperText:SetTextColor(0.95, 0.95, 0.9)
