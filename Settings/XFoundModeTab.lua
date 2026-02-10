@@ -119,6 +119,13 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
 
   local content = tabContents[1]
 
+  -- If the group is already locked for this character, show the
+  -- summary/overview layout instead of the setup form.
+  if IsGroupLocked() and UltraFound_CreateGroupFoundSummary then
+    UltraFound_CreateGroupFoundSummary(content)
+    return
+  end
+
   local title = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
   title:SetPoint('TOP', content, 'TOP', 0, -60)
   title:SetText('Group Found Setup')
