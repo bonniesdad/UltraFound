@@ -18,6 +18,7 @@ Functions/Utils/NormalizeName.lua
 Functions/DB/LoadDBData.lua
 Functions/DB/SaveDBData.lua
 Functions/TradeRestriction.lua
+Functions/GroupFoundSync.lua
 Functions/Utils/DiscordInvite.lua
 Functions/Utils/TwitchInvite.lua
 Functions/Utils/AboutAuthor.lua

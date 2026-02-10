@@ -104,12 +104,24 @@ local function ConfirmGroup()
     '|cff00ff00[Ultra Found]|r Group Found confirmed. Trading and mail will be restricted to your Group Found list.'
   )
 
-  if statusText then
-    statusText:SetText('Group Found is locked for this character.\nThese names cannot be changed.')
-    statusText:SetTextColor(0.9, 0.7, 0.2)
-  end
-
   SetInputsEnabled(false)
+
+  -- Switch the tab to the summary view immediately (no reload needed)
+  if confirmButton and UltraFound_CreateGroupFoundSummary then
+    local content = confirmButton:GetParent()
+    if content and content.GetNumChildren then
+      local n = content:GetNumChildren()
+      for i = n, 1, -1 do
+        local child = content:GetChild(i)
+        if child then
+          child:ClearAllPoints()
+          child:SetParent(nil)
+          child:Hide()
+        end
+      end
+      UltraFound_CreateGroupFoundSummary(content)
+    end
+  end
 end
 
 function UltraFound_InitializeXFoundModeTab(tabContents)

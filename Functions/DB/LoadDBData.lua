@@ -13,6 +13,9 @@ function LoadDBData()
     guildSelfFound = false,
     groupSelfFound = false,
     groupFoundNames = {},
+    groupFoundRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
+    groupFoundOffSpecRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
+    groupFoundMemberData = {}, -- [normalizedCharacterName] = { race, class, level, talentSpec, professions, equipment = { slotName = itemId } }
     lastOpenedSettingsTab = 1,
   }
 
