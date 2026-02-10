@@ -28,5 +28,6 @@ Functions/Utils/ExpansionCheck.lua
 Settings/Settings.lua
 Settings/TabManager.lua
 Settings/XFoundModeTab.lua
+Settings/GroupFoundSummary.lua
 Settings/InfoTab.lua
 Settings/CreditsTab.lua

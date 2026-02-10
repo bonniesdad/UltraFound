@@ -104,7 +104,7 @@ dividerTexture:SetTexCoord(0, 1, 0, 1)
 local titleBarLeftIcon = titleBar:CreateTexture(nil, 'OVERLAY')
 titleBarLeftIcon:SetSize(36, 36)
 titleBarLeftIcon:SetPoint('LEFT', titleBar, 'LEFT', 15, 3)
-titleBarLeftIcon:SetTexture('Interface\\AddOns\\UltraFound\\Textures\\bonnie0.png')
+titleBarLeftIcon:SetTexture(TEXTURE_PATH .. '\\bonnie-round.png')
 titleBarLeftIcon:SetTexCoord(0, 1, 0, 1)
 
 local closeButton = CreateFrame('Button', nil, titleBar, 'UIPanelCloseButton')
@@ -171,7 +171,7 @@ end
 local addonLDB = LibStub('LibDataBroker-1.1'):NewDataObject('UltraFound', {
   type = 'data source',
   text = 'Ultra Found',
-  icon = TEXTURE_PATH .. '\\skull3_100.png',
+  icon = TEXTURE_PATH .. '\\bonnie-round.png',
   OnClick = function(self, btn)
     if btn == 'LeftButton' then
       ToggleUltraFoundSettings()
