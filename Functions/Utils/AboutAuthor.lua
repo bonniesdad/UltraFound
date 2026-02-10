@@ -30,12 +30,12 @@ function UHC_CreateAboutAuthorSection(parent, point, relativeTo, relativePoint, 
   local aboutAuthorTitle = aboutAuthorFrame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightHuge')
   aboutAuthorTitle:SetPoint('LEFT', profilePictureFrame, 'RIGHT', 15, 0)
   aboutAuthorTitle:SetPoint('TOP', profilePictureFrame, 'TOP', 0, 0)
-  aboutAuthorTitle:SetText('Need Help? Ask the author!')
+  aboutAuthorTitle:SetText('Follow the Author!')
   aboutAuthorTitle:SetTextColor(0.922, 0.871, 0.761)
 
   local streamsTitle = aboutAuthorFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
   streamsTitle:SetPoint('TOPLEFT', aboutAuthorTitle, 'BOTTOMLEFT', 0, -8)
-  streamsTitle:SetText('BonniesDadTV streams on Twitch')
+  streamsTitle:SetText('BonniesDadTV on Twitch')
   streamsTitle:SetTextColor(0.922, 0.871, 0.761)
 
   local streamSchedule = aboutAuthorFrame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
