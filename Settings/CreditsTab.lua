@@ -32,10 +32,16 @@ function UltraFound_InitializeCreditsTab(tabContents)
   local ADDON_BOX_SIZE = 80
   local ADDON_BOX_GAP = 12
   local ADDON_TITLE_GAP = 6
-  local addonTitles = { 'Ultra Hardcore', 'Ultra Statistics', 'Ultra Found', 'Ultra Challenges' }
-  local BONNIE_BG = 'Interface\\AddOns\\UltraFound\\Textures\\bonnie0.png'
+  -- Only show the currently released addons in the Ultra family.
+  local addonTitles = { 'Ultra HC', 'Ultra Stats', 'Ultra Found' }
+  -- Specific icons for each addon
+  local addonTextures = {
+    'Interface\\AddOns\\UltraFound\\Textures\\Ultra HC Icon.png', -- Ultra Hardcore
+    'Interface\\AddOns\\UltraFound\\Textures\\stats.png',         -- Ultra Statistics
+    'Interface\\AddOns\\UltraFound\\Textures\\bonnie-round.png',  -- Ultra Found
+  }
   local contentW = 380
-  local numAddons = 4
+  local numAddons = #addonTitles
   local rowWidth = (ADDON_BOX_SIZE * numAddons) + (ADDON_BOX_GAP * (numAddons - 1))
   local rowStartX = (contentW - rowWidth) / 2 + 10
 
@@ -57,9 +63,16 @@ function UltraFound_InitializeCreditsTab(tabContents)
     box:SetPoint('TOP', titleLabel, 'BOTTOM', 0, -ADDON_TITLE_GAP)
     box:SetPoint('LEFT', contentBackground, 'LEFT', colX, 0)
     local tex = box:CreateTexture(nil, 'BACKGROUND')
-    tex:SetAllPoints(box)
-    tex:SetTexture(BONNIE_BG)
+    tex:SetTexture(addonTextures[i])
     tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    if i == 1 then
+      -- Ultra Hardcore icon: keep full size in the square
+      tex:SetAllPoints(box)
+    else
+      -- Ultra Statistics and Ultra Found: scale down slightly within the square
+      tex:SetPoint('CENTER', box, 'CENTER', 0, 0)
+      tex:SetSize(ADDON_BOX_SIZE * 0.8, ADDON_BOX_SIZE * 0.8)
+    end
     box:SetBackdrop({
       edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
       edgeSize = 12,
@@ -71,7 +84,7 @@ function UltraFound_InitializeCreditsTab(tabContents)
   end
 
   local joinDeveloperText = contentBackground:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
-  joinDeveloperText:SetPoint('TOP', addonRowBottom, 'BOTTOM', 0, -30)
+  joinDeveloperText:SetPoint('TOP', addonRowBottom, 'BOTTOM', -95, -30)
   joinDeveloperText:SetText(
     'Join the developers\' Discord community and Twitch channel to help \nsupport us and have your say on the future of this addon!'
   )

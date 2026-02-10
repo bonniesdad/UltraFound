@@ -2,7 +2,7 @@
 ## Title: Ultra Found
 ## Version: 1.0.0
 ## Author: BonniesDad
-## Notes: Self Found, Group Found, or Guild Found playthrough for WoW Classic.
+## Notes: Group Found playthrough for WoW Classic.
 ## SavedVariables: UltraFoundDB
 
 UltraFound.lua
@@ -30,4 +30,3 @@ Settings/TabManager.lua
 Settings/XFoundModeTab.lua
 Settings/InfoTab.lua
 Settings/CreditsTab.lua
-Settings/MainMenuButton.lua
