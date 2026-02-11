@@ -27,7 +27,7 @@ end
 local settingsFrame =
   CreateFrame('Frame', 'UltraFoundSettingsFrame', UIParent, 'BackdropTemplate')
 tinsert(UISpecialFrames, 'UltraFoundSettingsFrame')
-settingsFrame:SetSize(460, 700)
+settingsFrame:SetSize(460, 760)
 settingsFrame:SetMovable(true)
 settingsFrame:EnableMouse(true)
 settingsFrame:RegisterForDrag('LeftButton')

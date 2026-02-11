@@ -1,4 +1,22 @@
--- Build group list and merge in stored member data (from addon messages).
+-- Normalize equipment keys to our slot names (e.g. WoW slot names or alternate names).
+local EQUIP_SLOT_ALIAS = {
+  NeckSlot = 'Amulet', BackSlot = 'Cape', ShoulderSlot = 'Shoulders', WristSlot = 'Bracers',
+  ChestSlot = 'Chest', HandsSlot = 'Gloves', WaistSlot = 'Belt', FeetSlot = 'Boots', LegsSlot = 'Legs',
+  Finger0Slot = 'Ring1', Finger1Slot = 'Ring2', Trinket0Slot = 'Trinket1', Trinket1Slot = 'Trinket2',
+  MainHandSlot = 'MainHand', SecondaryHandSlot = 'OffHand', RangedSlot = 'Wand',
+  Neck = 'Amulet', Back = 'Cape', Wrist = 'Bracers', Hands = 'Gloves', Waist = 'Belt', Feet = 'Boots', Legs = 'Legs',
+  Finger0 = 'Ring1', Finger1 = 'Ring2', Trinket0 = 'Trinket1', Trinket1 = 'Trinket2', Ranged = 'Wand', SecondaryHand = 'OffHand',
+}
+
+local function ApplyMockEquipmentAliases(equip)
+  if not equip or type(equip) ~= 'table' then return equip end
+  local out = {}
+  for k, v in pairs(equip) do
+    out[EQUIP_SLOT_ALIAS[k] or k] = v
+  end
+  return out
+end
+
 local function BuildGroupData()
   local group = {}
   local playerName = UnitName and UnitName('player') or 'Your Character'
@@ -17,9 +35,12 @@ local function BuildGroupData()
   local maxLevel = (IsTBC and IsTBC()) and 70 or 60
   local result = {}
 
-  for _, name in ipairs(group) do
+  for i, name in ipairs(group) do
     local key = NormalizeName and NormalizeName(name) or name
     local data = memberData[key] or {}
+    if data.equipment then
+      data.equipment = ApplyMockEquipmentAliases(data.equipment)
+    end
     local profs = data.professions or {}
     if type(profs) ~= 'table' then profs = {} end
     local p1 = profs[1]
@@ -167,7 +188,7 @@ local EQUIP_BODY_LAYOUT = {
   { 'Cape', 'Amulet', 'Shoulders' },
   { 'Bracers', 'Chest', 'Ring1' },
   { 'Gloves', 'Belt', 'Ring2' },
-  { nil, 'Boots', nil },
+  { 'Boots', 'Legs', nil },
 }
 local EQUIP_WEAPON_SLOTS = { 'MainHand', 'OffHand', 'Wand' }
 local EQUIP_TRINKET_SLOTS = { 'Trinket1', 'Trinket2' }
@@ -200,6 +221,8 @@ local function ApplyMemberEquipment(container, equipment)
     local slot = select(i, container:GetChildren())
     if slot and slot.slotName then
       local itemId = equipment[slot.slotName]
+        or (slot.slotName == 'Trinket1' and equipment['Trinket0Slot'])
+        or (slot.slotName == 'Trinket2' and equipment['Trinket1Slot'])
       if itemId and itemId > 0 and GetItemIcon then
         local tex = GetItemIcon(itemId)
         if tex and slot.icon then
@@ -384,7 +407,7 @@ function UltraFound_CreateGroupFoundSummary(parent)
       frame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightSmall')
     levelText:SetPoint('TOPLEFT', detailsText, 'BOTTOMLEFT', 0, -rowSpacing)
     levelText:SetJustifyH('LEFT')
-    levelText:SetText(member.level and ('Level ' .. tostring(member.level) .. ' / ' .. tostring(maxLevel)) or 'Level —')
+    levelText:SetText(member.level and ('Level ' .. tostring(member.level)) or 'Level —')
     levelText:SetTextColor(0.85, 0.85, 0.85)
 
     local function ProfessionName(prof)
@@ -415,7 +438,7 @@ function UltraFound_CreateGroupFoundSummary(parent)
     local profValueWidth = 50
 
     -- Profession table: name left, value right (values line up in a column)
-    local profColRight = profColLeft + profColWidth - 80
+    local profColRight = profColLeft + profColWidth - 20
     local prof1Name = frame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightSmall')
     prof1Name:SetPoint('TOPLEFT', profHeader, 'BOTTOMLEFT', 0, -6)
     prof1Name:SetWidth(profNameWidth)

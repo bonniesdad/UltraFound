@@ -5,6 +5,8 @@ local groupInputs = {}
 local confirmButton
 local addPartyButton
 local statusText
+-- All form elements to hide when switching to summary (so we don't rely on GetChildren)
+local formElements = {}
 
 local function IsGroupLocked()
   return GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundLocked
@@ -109,16 +111,15 @@ local function ConfirmGroup()
   -- Switch the tab to the summary view immediately (no reload needed)
   if confirmButton and UltraFound_CreateGroupFoundSummary then
     local content = confirmButton:GetParent()
-    if content and content.GetNumChildren then
-      local n = content:GetNumChildren()
-      for i = n, 1, -1 do
-        local child = content:GetChild(i)
-        if child then
-          child:ClearAllPoints()
-          child:SetParent(nil)
-          child:Hide()
+    if content then
+      for _, el in ipairs(formElements) do
+        if el and el.ClearAllPoints and el.SetParent and el.Hide then
+          el:ClearAllPoints()
+          el:SetParent(nil)
+          el:Hide()
         end
       end
+      formElements = {}
       UltraFound_CreateGroupFoundSummary(content)
     end
   end
@@ -142,6 +143,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   title:SetPoint('TOP', content, 'TOP', 0, -60)
   title:SetText('Group Found Setup')
   title:SetTextColor(0.922, 0.871, 0.761)
+  table.insert(formElements, title)
 
   local description = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
   -- Slightly offset left so it visually centers with the form below
@@ -154,6 +156,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
     'Once confirmed, this list cannot be changed on this character.'
   )
   description:SetTextColor(0.9, 0.9, 0.9)
+  table.insert(formElements, description)
 
   -- Create input boxes, positioned relative to the description text
   -- so the whole form sits cleanly below the copy.
@@ -169,6 +172,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
     label:SetPoint('TOP', description, 'BOTTOM', -120, startYOffset - (i - 1) * fieldGap)
     label:SetText('Character ' .. i .. ':')
     label:SetTextColor(0.8, 0.8, 0.8)
+    table.insert(formElements, label)
 
     local box = CreateFrame('EditBox', nil, content, 'InputBoxTemplate')
     box:SetSize(220, 24)
@@ -176,7 +180,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
     box:SetPoint('LEFT', label, 'RIGHT', 10, 0)
     box:SetMaxLetters(64)
     box:SetText('')
-
+    table.insert(formElements, box)
     table.insert(groupInputs, box)
   end
 
@@ -188,6 +192,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   statusText:SetWidth(380)
   statusText:SetJustifyH('CENTER')
   statusText:SetTextColor(0.7, 0.7, 0.7)
+  table.insert(formElements, statusText)
 
   -- Buttons
 
@@ -199,6 +204,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   addPartyButton:SetPoint('TOP', statusText, 'BOTTOM', 0, -10)
   addPartyButton:SetText('Add Party Members')
   addPartyButton:SetScript('OnClick', PopulateFromParty)
+  table.insert(formElements, addPartyButton)
 
   confirmButton =
     CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
@@ -207,6 +213,7 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   confirmButton:SetPoint('BOTTOM', content, 'BOTTOM', 0, 0)
   confirmButton:SetText('Confirm Group')
   confirmButton:SetScript('OnClick', ConfirmGroup)
+  table.insert(formElements, confirmButton)
 
   -- Initialize from existing data
   LoadExistingGroupIntoInputs()

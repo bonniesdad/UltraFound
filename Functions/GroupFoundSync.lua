@@ -5,13 +5,13 @@ local ADDON_MSG_PREFIX = 'UltraFound'
 
 -- Equipment slot order and WoW inventory slot names (for GetInventorySlotInfo)
 local EQUIP_SLOT_ORDER = {
-  'Head', 'Cape', 'Amulet', 'Shoulders', 'Bracers', 'Chest', 'Gloves', 'Belt', 'Boots',
+  'Head', 'Cape', 'Amulet', 'Shoulders', 'Bracers', 'Chest', 'Gloves', 'Belt', 'Boots', 'Legs',
   'MainHand', 'OffHand', 'Wand', 'Ring1', 'Ring2', 'Trinket1', 'Trinket2',
 }
 local EQUIP_TO_WOW_SLOT = {
   Head = 'HeadSlot', Cape = 'BackSlot', Amulet = 'NeckSlot', Shoulders = 'ShoulderSlot',
   Bracers = 'WristSlot', Chest = 'ChestSlot', Gloves = 'HandsSlot', Belt = 'WaistSlot',
-  Boots = 'FeetSlot', MainHand = 'MainHandSlot', OffHand = 'SecondaryHandSlot', Wand = 'RangedSlot',
+  Boots = 'FeetSlot', Legs = 'LegsSlot', MainHand = 'MainHandSlot', OffHand = 'SecondaryHandSlot', Wand = 'RangedSlot',
   Ring1 = 'Finger0Slot', Ring2 = 'Finger1Slot', Trinket1 = 'Trinket0Slot', Trinket2 = 'Trinket1Slot',
 }
 
