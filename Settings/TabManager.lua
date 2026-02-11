@@ -86,7 +86,7 @@ end
 
 local function createTabContent(index, parentFrame)
   local content = CreateFrame('Frame', nil, parentFrame)
-  content:SetSize(420, 600)
+  content:SetSize(420, 660)
   content:SetPoint('TOP', parentFrame, 'TOP', 0, -50)
   content:Hide()
   return content
