@@ -1,3 +1,15 @@
+-- -- Set to true to use mock data for all group found members (for UI testing).
+-- local USE_GROUP_FOUND_MOCK_DATA = true
+
+-- -- Mock data per member index (1 = player, 2 = first party member, ...). Use our slot names: Head, Cape, Amulet, Shoulders, Bracers, Chest, Gloves, Belt, Boots, MainHand, OffHand, Wand, Ring1, Ring2, Trinket1, Trinket2.
+-- local MOCK_MEMBERS = {
+--   [1] = { race = 'Human', class = 'Warrior', level = 42, talentSpec = 'Arms', professions = { { name = 'Mining', level = '200/225' }, { name = 'Blacksmithing', level = '185/225' } }, equipment = { Head = 22490, Amulet = 22935, Shoulders = 22491, Cape = 2580, Chest = 22488, Bracers = 22671, Gloves = 22493, Belt = 12406, Boots = 22492, Ring1 = 23064, Ring2 = 23064, Trinket1 = 23042, Trinket2 = 23042, MainHand = 6975, OffHand = 14002, Wand = 9489, Legs = 22700 } },
+--   [2] = { race = 'Night Elf', class = 'Druid', level = 38, talentSpec = 'Restoration', professions = { { name = 'Herbalism', level = '175/225' }, { name = 'Alchemy', level = '170/225' } }, equipment = { Head = 22490, Chest = 2318, MainHand = 647 } },
+--   [3] = { race = 'Dwarf', class = 'Priest', level = 35, talentSpec = 'Holy', professions = { { name = 'Tailoring', level = '150/225' }, { name = 'Enchanting', level = '140/225' } }, equipment = { Head = 22490, Chest = 2318, MainHand = 647 } },
+--   [4] = { race = 'Orc', class = 'Shaman', level = 28, talentSpec = 'Elemental', professions = { { name = 'Skinning', level = '120/225' }, nil }, equipment = { Chest = 2318, MainHand = 2109 } },
+--   [5] = { race = 'Undead', class = 'Mage', level = 22, talentSpec = 'Frost', professions = { nil, nil }, equipment = { MainHand = 2092, Wand = 5202 } },
+-- }
+
 -- Normalize equipment keys to our slot names (e.g. WoW slot names or alternate names).
 local EQUIP_SLOT_ALIAS = {
   NeckSlot = 'Amulet', BackSlot = 'Cape', ShoulderSlot = 'Shoulders', WristSlot = 'Bracers',
@@ -8,14 +20,14 @@ local EQUIP_SLOT_ALIAS = {
   Finger0 = 'Ring1', Finger1 = 'Ring2', Trinket0 = 'Trinket1', Trinket1 = 'Trinket2', Ranged = 'Wand', SecondaryHand = 'OffHand',
 }
 
-local function ApplyMockEquipmentAliases(equip)
-  if not equip or type(equip) ~= 'table' then return equip end
-  local out = {}
-  for k, v in pairs(equip) do
-    out[EQUIP_SLOT_ALIAS[k] or k] = v
-  end
-  return out
-end
+-- local function ApplyMockEquipmentAliases(equip)
+--   if not equip or type(equip) ~= 'table' then return equip end
+--   local out = {}
+--   for k, v in pairs(equip) do
+--     out[EQUIP_SLOT_ALIAS[k] or k] = v
+--   end
+--   return out
+-- end
 
 local function BuildGroupData()
   local group = {}
@@ -38,9 +50,19 @@ local function BuildGroupData()
   for i, name in ipairs(group) do
     local key = NormalizeName and NormalizeName(name) or name
     local data = memberData[key] or {}
-    if data.equipment then
-      data.equipment = ApplyMockEquipmentAliases(data.equipment)
-    end
+    -- local mock = USE_GROUP_FOUND_MOCK_DATA and MOCK_MEMBERS[i]
+    -- if mock then
+    --   data = {
+    --     race = mock.race or data.race,
+    --     class = mock.class or data.class,
+    --     level = mock.level or data.level,
+    --     talentSpec = mock.talentSpec or data.talentSpec,
+    --     professions = mock.professions or data.professions,
+    --     equipment = ApplyMockEquipmentAliases(mock.equipment or data.equipment),
+    --   }
+    -- elseif data.equipment then
+    --   data.equipment = ApplyMockEquipmentAliases(data.equipment)
+    -- end
     local profs = data.professions or {}
     if type(profs) ~= 'table' then profs = {} end
     local p1 = profs[1]
@@ -353,7 +375,7 @@ function UltraFound_CreateGroupFoundSummary(parent)
     local frame =
       CreateFrame('Frame', nil, content, 'BackdropTemplate')
     -- Height fits name, level, talent spec, professions, and equipment grid (5 rows of 18px + gaps)
-    frame:SetSize(420, 12 + (5 * 18 + 4 * 2) + 12)
+    frame:SetSize(520, 12 + (5 * 18 + 4 * 2) + 12)
     frame:SetPoint('TOP', previous, 'BOTTOM', 0, -10)
     frame:SetBackdrop({
       edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',

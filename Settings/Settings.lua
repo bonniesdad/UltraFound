@@ -27,7 +27,7 @@ end
 local settingsFrame =
   CreateFrame('Frame', 'UltraFoundSettingsFrame', UIParent, 'BackdropTemplate')
 tinsert(UISpecialFrames, 'UltraFoundSettingsFrame')
-settingsFrame:SetSize(460, 760)
+settingsFrame:SetSize(560, 760)
 settingsFrame:SetMovable(true)
 settingsFrame:EnableMouse(true)
 settingsFrame:RegisterForDrag('LeftButton')
@@ -76,7 +76,7 @@ end
 updateSettingsFrameBackdrop()
 
 local titleBar = CreateFrame('Frame', nil, settingsFrame, 'BackdropTemplate')
-titleBar:SetSize(460, 60)
+titleBar:SetSize(560, 60)
 titleBar:SetPoint('TOP', settingsFrame, 'TOP')
 titleBar:SetFrameStrata('DIALOG')
 titleBar:SetFrameLevel(20)
@@ -92,7 +92,7 @@ settingsTitleLabel:SetText('Ultra Found')
 settingsTitleLabel:SetTextColor(0.922, 0.871, 0.761)
 
 local dividerFrame = CreateFrame('Frame', nil, settingsFrame)
-dividerFrame:SetSize(470, 24)
+dividerFrame:SetSize(570, 24)
 dividerFrame:SetPoint('BOTTOM', titleBar, 'BOTTOM', 0, -10)
 dividerFrame:SetFrameStrata('DIALOG')
 dividerFrame:SetFrameLevel(20)
