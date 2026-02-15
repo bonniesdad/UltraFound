@@ -154,7 +154,6 @@ end
 
 local frame = CreateFrame('Frame')
 frame:RegisterEvent('GROUP_ROSTER_UPDATE')
-frame:RegisterEvent('PARTY_MEMBERS_CHANGED')
 frame:RegisterEvent('PLAYER_ENTERING_WORLD')
 frame:RegisterEvent('CHAT_MSG_ADDON')
 
@@ -163,7 +162,7 @@ if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
 end
 
 frame:SetScript('OnEvent', function(self, event, ...)
-  if event == 'GROUP_ROSTER_UPDATE' or event == 'PARTY_MEMBERS_CHANGED' or event == 'PLAYER_ENTERING_WORLD' then
+  if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
     if event == 'PLAYER_ENTERING_WORLD' then
       frame:SetScript('OnUpdate', function(f)
         f:SetScript('OnUpdate', nil)
