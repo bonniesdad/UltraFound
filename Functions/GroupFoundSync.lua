@@ -133,6 +133,146 @@ local function StoreMemberData(normalizedName, data)
   end
 end
 
+-- Guild team sync: send/receive team data for Guild Leaderboards
+local function calculatePoints(level, enemiesSlain, dungeonsCompleted, goldGained)
+  local levelPts = (tonumber(level) or 0) * 100
+  local enemiesPts = math.floor((tonumber(enemiesSlain) or 0) / 10)
+  local dungeonsPts = (tonumber(dungeonsCompleted) or 0) * 75
+  local goldPts = math.floor((tonumber(goldGained) or 0) / 100000)
+  return levelPts + enemiesPts + dungeonsPts + goldPts
+end
+
+local function BuildOurTeamForGuildSync()
+  local members = {}
+  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local playerName = UnitName and UnitName('player')
+  if not playerName then return nil, 0 end
+
+  table.insert(members, {
+    name = playerName,
+    race = (UnitRace and select(1, UnitRace('player'))) or '—',
+    class = (UnitClass and select(1, UnitClass('player'))) or '—',
+    level = UnitLevel and UnitLevel('player') or nil,
+  })
+  for _, name in ipairs(GLOBAL_SETTINGS.groupFoundNames or {}) do
+    if name and name ~= '' then
+      local key = NormalizeName and NormalizeName(name) or string.lower(name or '')
+      local d = memberData[key] or {}
+      table.insert(members, {
+        name = name,
+        race = d.race or '—',
+        class = d.class or '—',
+        level = d.level,
+      })
+    end
+  end
+
+  local db = _G.UltraStatisticsDB
+  local nameToPoints = {}
+  if db and db.characterStats and type(db.characterStats) == 'table' then
+    local currentGUID = UnitGUID and UnitGUID('player')
+    local currentLevel = UnitLevel and UnitLevel('player') or 0
+    for guid, stats in pairs(db.characterStats) do
+      if stats and type(stats) == 'table' then
+        local n = ''
+        if GetPlayerInfoByGUID and guid then
+          local _, _, _, _, _, nm, _ = GetPlayerInfoByGUID(guid)
+          n = nm or ''
+        end
+        local norm = NormalizeName and NormalizeName(n) or string.lower(n or '')
+        if norm and norm ~= '' then
+          local lvl = (guid == currentGUID) and currentLevel or nil
+          local pts = calculatePoints(lvl or 0, stats.enemiesSlain or 0, stats.dungeonsCompleted or 0, stats.goldGained or 0)
+          if not nameToPoints[norm] then nameToPoints[norm] = pts end
+        end
+      end
+    end
+  end
+
+  local totalPoints = 0
+  for _, m in ipairs(members) do
+    local norm = NormalizeName and NormalizeName(m.name) or string.lower(m.name or '')
+    local pts = nameToPoints[norm] or 0
+    m.points = pts
+    totalPoints = totalPoints + pts
+  end
+  return members, totalPoints
+end
+
+local function SerializeGuildTeam(members, totalPoints)
+  if not members or #members == 0 then return nil end
+  local parts = { 'G', tostring(totalPoints) }
+  for _, m in ipairs(members) do
+    table.insert(parts, (m.name or ''):gsub('\t', ' '))
+    table.insert(parts, tostring(m.level or ''))
+    table.insert(parts, (m.race or ''):gsub('\t', ' '))
+    table.insert(parts, (m.class or ''):gsub('\t', ' '))
+    table.insert(parts, tostring(m.points or 0))
+  end
+  return table.concat(parts, '\t')
+end
+
+local function ParseGuildTeamMessage(msg)
+  if not msg or msg == '' then return nil end
+  local parts = {}
+  for part in (msg .. '\t'):gmatch('([^\t]*)\t') do
+    table.insert(parts, part)
+  end
+  if #parts < 2 or parts[1] ~= 'G' then return nil end
+  local totalPoints = tonumber(parts[2]) or 0
+  local members = {}
+  -- New format: 5 fields per member (name, level, race, class, points). Old: 4 fields.
+  local stride = (#parts >= 7 and tonumber(parts[7])) and 5 or 4
+  for i = 3, #parts - stride + 1, stride do
+    if parts[i] and parts[i] ~= '' then
+      local m = {
+        name = parts[i],
+        level = tonumber(parts[i + 1]) or nil,
+        race = parts[i + 2] and parts[i + 2] ~= '' and parts[i + 2] or '—',
+        class = parts[i + 3] and parts[i + 3] ~= '' and parts[i + 3] or '—',
+      }
+      if stride == 5 and parts[i + 4] then
+        m.points = tonumber(parts[i + 4]) or 0
+      end
+      table.insert(members, m)
+    end
+  end
+  if #members == 0 then return nil end
+  return { members = members, totalPoints = totalPoints }
+end
+
+local function StoreGuildTeamData(sender, teamData)
+  if not GLOBAL_SETTINGS or not sender or not teamData then return end
+  if not GLOBAL_SETTINGS.guildTeamsData then
+    GLOBAL_SETTINGS.guildTeamsData = {}
+  end
+  local key = NormalizeName and NormalizeName(sender) or string.lower(sender or '')
+  GLOBAL_SETTINGS.guildTeamsData[key] = {
+    senderName = sender,
+    members = teamData.members,
+    totalPoints = teamData.totalPoints,
+  }
+  if SaveCharacterSettings then
+    SaveCharacterSettings(GLOBAL_SETTINGS)
+  end
+end
+
+local function SendGuildTeamStats()
+  if not GLOBAL_SETTINGS then return end
+  if not (GLOBAL_SETTINGS.groupSelfFound or GLOBAL_SETTINGS.guildSelfFound) then return end
+  -- Classic: GetGuildInfo("player") returns guild name if in guild, nil otherwise
+  if not (GetGuildInfo and GetGuildInfo('player')) then return end
+  if not SendAddonMessage then return end
+
+  local members, totalPoints = BuildOurTeamForGuildSync()
+  if not members or #members == 0 then return end
+
+  local msg = SerializeGuildTeam(members, totalPoints)
+  if msg and #msg < 255 then
+    SendAddonMessage(ADDON_MSG_PREFIX, msg, 'GUILD')
+  end
+end
+
 local function SendMyStats()
   if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then return end
   if GetNumGroupMembers and GetNumGroupMembers() < 1 then return end
@@ -155,6 +295,7 @@ end
 local frame = CreateFrame('Frame')
 frame:RegisterEvent('GROUP_ROSTER_UPDATE')
 frame:RegisterEvent('PLAYER_ENTERING_WORLD')
+frame:RegisterEvent('GUILD_ROSTER_UPDATE')
 frame:RegisterEvent('CHAT_MSG_ADDON')
 
 if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
@@ -162,27 +303,37 @@ if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
 end
 
 frame:SetScript('OnEvent', function(self, event, ...)
-  if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
+  if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' or event == 'GUILD_ROSTER_UPDATE' then
     if event == 'PLAYER_ENTERING_WORLD' then
       frame:SetScript('OnUpdate', function(f)
         f:SetScript('OnUpdate', nil)
         SendMyStats()
+        SendGuildTeamStats()
       end)
     else
       SendMyStats()
+      SendGuildTeamStats()
     end
     return
   end
 
   if event == 'CHAT_MSG_ADDON' then
     local prefix, msg, channel, sender = ...
-    if prefix ~= ADDON_MSG_PREFIX or channel ~= 'PARTY' or not sender or sender == '' then return end
-    if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then return end
-    if not IsAllowedByGroupList then return end
-    if not IsAllowedByGroupList(sender) then return end
-    local data = ParseStatsMessage(msg)
-    if data then
-      StoreMemberData(NormalizeName(sender), data)
+    if prefix ~= ADDON_MSG_PREFIX or not sender or sender == '' then return end
+
+    if channel == 'PARTY' then
+      if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then return end
+      if not IsAllowedByGroupList then return end
+      if not IsAllowedByGroupList(sender) then return end
+      local data = ParseStatsMessage(msg)
+      if data then
+        StoreMemberData(NormalizeName(sender), data)
+      end
+    elseif channel == 'GUILD' then
+      local teamData = ParseGuildTeamMessage(msg)
+      if teamData then
+        StoreGuildTeamData(sender, teamData)
+      end
     end
   end
 end)
@@ -190,4 +341,5 @@ end)
 -- Expose for UI refresh after receiving data (e.g. GroupFoundSummary can call this)
 function UltraFound_RequestGroupSync()
   SendMyStats()
+  SendGuildTeamStats()
 end

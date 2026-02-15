@@ -16,6 +16,7 @@ function LoadDBData()
     groupFoundRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
     groupFoundOffSpecRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
     groupFoundMemberData = {}, -- [normalizedCharacterName] = { race, class, level, talentSpec, professions, equipment = { slotName = itemId } }
+    guildTeamsData = {}, -- [normalizedSenderName] = { senderName, members = [{name,race,class,level}], totalPoints } from addon messages
     lastOpenedSettingsTab = 1,
   }
 

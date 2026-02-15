@@ -1,5 +1,6 @@
 ## Interface: 11508, 20505
 ## Title: Ultra Found
+## OptionalDeps: UltraStatistics
 ## Version: 1.0.0
 ## Author: BonniesDad
 ## Notes: Group Found playthrough for WoW Classic.
@@ -32,3 +33,4 @@ Settings/XFoundModeTab.lua
 Settings/GroupFoundSummary.lua
 Settings/InfoTab.lua
 Settings/CreditsTab.lua
+Settings/LeaderboardsTab.lua

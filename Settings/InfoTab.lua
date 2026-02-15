@@ -1,10 +1,10 @@
 -- Info Tab Content - Same pattern as UltraHardcore
 function UltraFound_InitializeInfoTab(tabContents)
-  if not tabContents or not tabContents[2] then return end
-  if tabContents[2].initialized then return end
-  tabContents[2].initialized = true
+  if not tabContents or not tabContents[3] then return end
+  if tabContents[3].initialized then return end
+  tabContents[3].initialized = true
 
-  local content = tabContents[2]
+  local content = tabContents[3]
 
   local philosophyText = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
   philosophyText:SetPoint('TOP', content, 'TOP', 0, -70)
@@ -43,7 +43,7 @@ function UltraFound_InitializeInfoTab(tabContents)
   patchNotesFrame:SetPoint('TOP', patchNotesTitle, 'BOTTOM', 0, -17)
   patchNotesFrame:SetPoint('LEFT', content, 'LEFT', 10, 0)
   patchNotesFrame:SetPoint('RIGHT', content, 'RIGHT', -10, 0)
-  patchNotesFrame:SetHeight(380)
+  patchNotesFrame:SetHeight(426)
   patchNotesFrame:SetBackdrop({
     bgFile = 'Interface\\DialogFrame\\UI-DialogBox-Background',
     edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
@@ -55,5 +55,7 @@ function UltraFound_InitializeInfoTab(tabContents)
   patchNotesFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.95)
   patchNotesFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
-  UltraFound_CreatePatchNotesDisplay(patchNotesFrame, 360, 360, 10, -10)
+  local frameW = patchNotesFrame:GetWidth()
+  local scrollW = (frameW and frameW > 100) and (frameW - 39) or 461
+  UltraFound_CreatePatchNotesDisplay(patchNotesFrame, scrollW, 407, 10, -10)
 end

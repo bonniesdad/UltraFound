@@ -1,14 +1,15 @@
 -- Use UltraFound_* globals only so we never overwrite UltraHardcore's TabManager* when both addons load
 local TabManager = {}
-local TAB_WIDTH = 140
+local TAB_WIDTH = 135
 local TAB_HEIGHT = 32
 local TAB_SPACING = 3
 local TEXTURE_PATH = 'Interface\\AddOns\\UltraFound\\Textures'
 
 local TAB_WIDTHS = {
-  [1] = 160, -- X Found Mode (wider label)
+  [1] = TAB_WIDTH,
   [2] = TAB_WIDTH,
   [3] = TAB_WIDTH,
+  [4] = TAB_WIDTH,
 }
 
 local BASE_TEXT_COLOR = {
@@ -36,9 +37,9 @@ local activeTab = 1
 
 local function calculateTabOffset(index)
   local totalWidth = 0
-  for i = 1, 3 do
+  for i = 1, 4 do
     local w = TAB_WIDTHS[i] or TAB_WIDTH
-    totalWidth = totalWidth + w + (i < 3 and TAB_SPACING or 0)
+    totalWidth = totalWidth + w + (i < 4 and TAB_SPACING or 0)
   end
   local leftEdge = -totalWidth / 2
   local cumulativeWidth = 0
@@ -86,7 +87,7 @@ end
 
 local function createTabContent(index, parentFrame)
   local content = CreateFrame('Frame', nil, parentFrame)
-  content:SetSize(420, 660)
+  content:SetSize(520, 660)
   content:SetPoint('TOP', parentFrame, 'TOP', 0, -50)
   content:Hide()
   return content
@@ -97,12 +98,14 @@ function UltraFound_InitializeTabs(settingsFrame)
   if tabButtons[1] then return end
 
   tabButtons[1] = createTabButton('X Found Mode', 1, settingsFrame)
-  tabButtons[2] = createTabButton('Info', 2, settingsFrame)
-  tabButtons[3] = createTabButton('Need Help?', 3, settingsFrame)
+  tabButtons[2] = createTabButton('Leaderboards', 2, settingsFrame)
+  tabButtons[3] = createTabButton('Info', 3, settingsFrame)
+  tabButtons[4] = createTabButton('Need Help?', 4, settingsFrame)
 
   tabContents[1] = createTabContent(1, settingsFrame)
   tabContents[2] = createTabContent(2, settingsFrame)
   tabContents[3] = createTabContent(3, settingsFrame)
+  tabContents[4] = createTabContent(4, settingsFrame)
 end
 
 function UltraFound_SwitchToTab(index)
@@ -162,10 +165,13 @@ function UltraFound_SwitchToTab(index)
   if index == 1 and UltraFound_InitializeXFoundModeTab then
     UltraFound_InitializeXFoundModeTab(tabContents)
   end
-  if index == 2 and UltraFound_InitializeInfoTab then
+  if index == 2 and UltraFound_InitializeLeaderboardsTab then
+    UltraFound_InitializeLeaderboardsTab(tabContents)
+  end
+  if index == 3 and UltraFound_InitializeInfoTab then
     UltraFound_InitializeInfoTab(tabContents)
   end
-  if index == 3 and UltraFound_InitializeCreditsTab then
+  if index == 4 and UltraFound_InitializeCreditsTab then
     UltraFound_InitializeCreditsTab(tabContents)
   end
 end
@@ -174,7 +180,7 @@ function UltraFound_SetDefaultTab()
   local defaultIndex = 1
   if GLOBAL_SETTINGS and GLOBAL_SETTINGS.lastOpenedSettingsTab then
     local saved = GLOBAL_SETTINGS.lastOpenedSettingsTab
-    if type(saved) == 'number' and tabContents[saved] then
+    if type(saved) == 'number' and saved >= 1 and saved <= 4 and tabContents[saved] then
       defaultIndex = saved
     end
   end
