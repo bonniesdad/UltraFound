@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "prettier": "prettier --write .",
+    "zip": "rsync -av --exclude='.*' Functions Settings Textures Libs UltraFound.lua UltraFound.toc ToBeZipped/UltraFound && cd ToBeZipped && zip -r UltraFound.zip UltraFound  -x '*.DS_Store'"
+  },
+  "devDependencies": {
+    "@prettier/plugin-lua": "^0.0.3",
+    "prettier": "^3.4.2"
+  }
+}
