@@ -131,6 +131,7 @@ end
 local function buildTeamLeaderboardData()
   local allData = buildLeaderboardData()
   local teamNames = getTeamNames()
+  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
   if #teamNames == 0 then return allData end
   local nameToRow = {}
   for _, row in ipairs(allData) do
@@ -142,21 +143,49 @@ local function buildTeamLeaderboardData()
     local norm = NormalizeName and NormalizeName(name) or string.lower(name or '')
     local row = nameToRow[norm]
     if row then
+      -- For teammates: prefer synced stats (from their client) when available
+      local synced = memberData[norm]
+      local isPlayer = norm == (NormalizeName and NormalizeName(UnitName and UnitName('player')) or string.lower(UnitName and UnitName('player') or ''))
+      if not isPlayer and synced and (synced.enemiesSlain or synced.dungeonsCompleted or synced.goldGained) then
+        row = {
+          name = row.name,
+          guid = row.guid,
+          level = synced.level or row.level,
+          enemiesSlain = synced.enemiesSlain or row.enemiesSlain or 0,
+          dungeonsCompleted = synced.dungeonsCompleted or row.dungeonsCompleted or 0,
+          highestCritValue = synced.highestCritValue or row.highestCritValue or 0,
+          healthPotionsUsed = synced.healthPotionsUsed or row.healthPotionsUsed or 0,
+          goldGained = synced.goldGained or row.goldGained or 0,
+          points = calculatePoints(synced.level or row.level or 0, synced.enemiesSlain or row.enemiesSlain or 0, synced.dungeonsCompleted or row.dungeonsCompleted or 0, synced.goldGained or row.goldGained or 0),
+        }
+      end
       table.insert(result, row)
     else
-      local currentGUID = UnitGUID and UnitGUID('player')
-      local isPlayer = norm == (NormalizeName and NormalizeName(UnitName and UnitName('player')) or string.lower(UnitName and UnitName('player') or ''))
-      local level = (isPlayer and UnitLevel) and UnitLevel('player') or nil
+      -- No local data; use synced stats from group member if available
+      local synced = memberData[norm]
+      local level, enemiesSlain, dungeonsCompleted, highestCritValue, healthPotionsUsed, goldGained, points = nil, 0, 0, 0, 0, 0, 0
+      if synced then
+        level = synced.level
+        enemiesSlain = synced.enemiesSlain or 0
+        dungeonsCompleted = synced.dungeonsCompleted or 0
+        highestCritValue = synced.highestCritValue or 0
+        healthPotionsUsed = synced.healthPotionsUsed or 0
+        goldGained = synced.goldGained or 0
+        points = calculatePoints(level or 0, enemiesSlain, dungeonsCompleted, goldGained)
+      else
+        local isPlayer = norm == (NormalizeName and NormalizeName(UnitName and UnitName('player')) or string.lower(UnitName and UnitName('player') or ''))
+        level = (isPlayer and UnitLevel) and UnitLevel('player') or nil
+      end
       table.insert(result, {
         name = name,
         guid = nil,
         level = level,
-        enemiesSlain = 0,
-        dungeonsCompleted = 0,
-        highestCritValue = 0,
-        healthPotionsUsed = 0,
-        goldGained = 0,
-        points = 0,
+        enemiesSlain = enemiesSlain,
+        dungeonsCompleted = dungeonsCompleted,
+        highestCritValue = highestCritValue,
+        healthPotionsUsed = healthPotionsUsed,
+        goldGained = goldGained,
+        points = points,
       })
     end
   end
@@ -204,12 +233,16 @@ local function buildGuildLeaderboardData()
     if name and name ~= '' then
       local key = NormalizeName and NormalizeName(name) or string.lower(name or '')
       local data = memberData[key] or {}
+      local pts = nameToPoints[key]
+      if pts == nil and data.enemiesSlain then
+        pts = calculatePoints(data.level or 0, data.enemiesSlain or 0, data.dungeonsCompleted or 0, data.goldGained or 0)
+      end
       table.insert(ourMembers, {
         name = name,
         race = data.race or '—',
         class = data.class or '—',
         level = data.level,
-        points = nameToPoints[key] or 0,
+        points = pts or 0,
       })
     end
   end
@@ -243,8 +276,9 @@ end
 function UltraFound_InitializeLeaderboardsTab(tabContents)
   if not tabContents or not tabContents[2] then return end
   local content = tabContents[2]
-  if content.initialized and content.refreshGuildLeaderboard then
-    content.refreshGuildLeaderboard()
+  if content.initialized then
+    if content.refreshTeamLeaderboard then content.refreshTeamLeaderboard() end
+    if content.refreshGuildLeaderboard then content.refreshGuildLeaderboard() end
     return
   end
   content.initialized = true
@@ -341,6 +375,28 @@ function UltraFound_InitializeLeaderboardsTab(tabContents)
   end
 
   local prevRow = headerRow
+  local teamRowFrames = {}
+
+  local function refreshTeamLeaderboard()
+    local freshData = buildTeamLeaderboardData()
+    local freshNames = getTeamNames()
+    local nRows = (#freshNames > 0) and #freshData or math.min(NUM_VISIBLE_ROWS, #freshData)
+    nRows = math.max(1, math.min(nRows, 10))
+    for i = 1, nRows do
+      local row = freshData[i]
+      local rowFrame = teamRowFrames[i]
+      if row and rowFrame and rowFrame.cells then
+        for j, col in ipairs(COLUMNS) do
+          local cell = rowFrame.cells[j]
+          if cell and cell.SetText then
+            local val = row[col.key]
+            local text = formatValue(col.key, val, row)
+            cell:SetText(text)
+          end
+        end
+      end
+    end
+  end
 
   if #teamData == 0 then
     local emptyLabel = charTableFrame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
@@ -354,6 +410,8 @@ function UltraFound_InitializeLeaderboardsTab(tabContents)
       rowFrame:SetPoint('TOPLEFT', prevRow, 'BOTTOMLEFT', 0, -2)
       rowFrame:SetSize(tableWidth, ROW_HEIGHT)
       prevRow = rowFrame
+      teamRowFrames[i] = rowFrame
+      rowFrame.cells = {}
 
       xPos = 0
       for j, col in ipairs(COLUMNS) do
@@ -366,10 +424,13 @@ function UltraFound_InitializeLeaderboardsTab(tabContents)
         cell:SetJustifyH(col.align == 'CENTER' and 'CENTER' or (col.align == 'RIGHT' and 'RIGHT' or 'LEFT'))
         cell:SetText(text)
         cell:SetTextColor(0.92, 0.92, 0.92)
+        rowFrame.cells[j] = cell
         xPos = xPos + w + COLUMN_GAP
       end
     end
   end
+
+  content.refreshTeamLeaderboard = refreshTeamLeaderboard
 
   -- Guild Leaderboards title (between the two tables)
   local guildTitle = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
