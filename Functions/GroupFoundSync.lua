@@ -62,14 +62,27 @@ local function GetPlayerStatsForSync()
   local talentSpec = ''
   local professions = {}
 
-  -- Only include abandonable skills (professions); languages are not abandonable
+  -- Include professions (abandonable skills 75+); exclude languages by name
+  -- skillMaxRank >= 75 covers Apprentice (1-75) through Artisan (225-300)
+  -- isAbandonable may be 1 or true; some clients return nil - use language blocklist fallback
+  local LANGUAGE_BLACKLIST = {
+    Common = true, Orcish = true, Dwarvish = true, Darnassian = true,
+    Taurahe = true, Thalassian = true, Demonic = true, Draconic = true,
+    Titan = true, Kalimag = true, Gnomish = true, Troll = true,
+  }
   if GetNumSkillLines and GetSkillLineInfo then
     for i = 1, GetNumSkillLines() do
       local skillName, header, _, skillRank, _, _, skillMaxRank, isAbandonable = GetSkillLineInfo(i)
-      if header ~= 1 and skillName and skillName ~= '' and skillMaxRank and skillMaxRank >= 225 and isAbandonable == 1 then
-        local levelStr = (skillRank and skillMaxRank) and (tostring(skillRank) .. '/' .. tostring(skillMaxRank)) or ''
-        table.insert(professions, { name = skillName, level = levelStr })
-        if #professions >= 2 then break end
+      local isHeader = (header == 1 or header == true)
+      if not isHeader and skillName and skillName ~= '' and skillMaxRank and skillMaxRank >= 75 then
+        if not LANGUAGE_BLACKLIST[skillName] then
+          local isProfession = (isAbandonable == 1 or isAbandonable == true) or (skillMaxRank >= 75 and skillMaxRank <= 450)
+          if isProfession then
+            local levelStr = (skillRank and skillMaxRank) and (tostring(skillRank) .. '/' .. tostring(skillMaxRank)) or ''
+            table.insert(professions, { name = skillName, level = levelStr })
+            if #professions >= 2 then break end
+          end
+        end
       end
     end
   end
