@@ -292,10 +292,6 @@ local function SendGuildTeamStats()
     SyncLog('SendGuildTeamStats early exit', 'no GLOBAL_SETTINGS')
     return
   end
-  if not (GLOBAL_SETTINGS.groupSelfFound or GLOBAL_SETTINGS.guildSelfFound) then
-    SyncLog('SendGuildTeamStats early exit', 'groupSelfFound=%s guildSelfFound=%s', tostring(GLOBAL_SETTINGS.groupSelfFound), tostring(GLOBAL_SETTINGS.guildSelfFound))
-    return
-  end
   -- Classic: GetGuildInfo("player") returns guild name if in guild, nil otherwise
   if not (GetGuildInfo and GetGuildInfo('player')) then
     SyncLog('SendGuildTeamStats early exit', 'not in guild')
@@ -327,10 +323,6 @@ end
 
 local function SendMyStats()
   SyncLog('SendMyStats called')
-  if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then
-    SyncLog('SendMyStats early exit', 'no settings or groupSelfFound off (groupSelfFound=%s)', tostring(GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupSelfFound))
-    return
-  end
   local numMembers = GetNumGroupMembers and GetNumGroupMembers() or 0
   if numMembers < 1 then
     SyncLog('SendMyStats early exit', 'GetNumGroupMembers=%d (need party/raid)', numMembers)
@@ -403,10 +395,6 @@ frame:SetScript('OnEvent', function(self, event, ...)
     SyncLog('CHAT_MSG_ADDON received', 'prefix=%s channel=%s sender=%s len=%d', prefix, channel, sender, msg and #msg or 0)
 
     if channel == 'PARTY' then
-      if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then
-        SyncLog('PARTY msg ignored', 'no settings or groupSelfFound off')
-        return
-      end
       if not IsAllowedByGroupList then
         SyncLog('PARTY msg ignored', 'IsAllowedByGroupList not available')
         return
