@@ -74,6 +74,21 @@ local function GetPlayerStatsForSync()
     end
   end
 
+  -- Leaderboard stats from UltraStatistics
+  local enemiesSlain, dungeonsCompleted, goldGained, highestCritValue, healthPotionsUsed = 0, 0, 0, 0, 0
+  local db = _G.UltraStatisticsDB
+  if db and db.characterStats and type(db.characterStats) == 'table' then
+    local guid = UnitGUID and UnitGUID('player')
+    if guid and db.characterStats[guid] then
+      local s = db.characterStats[guid]
+      enemiesSlain = s.enemiesSlain or 0
+      dungeonsCompleted = s.dungeonsCompleted or 0
+      goldGained = s.goldGained or 0
+      highestCritValue = s.highestCritValue or 0
+      healthPotionsUsed = s.healthPotionsUsed or 0
+    end
+  end
+
   return {
     race = race:gsub('\t', ' '),
     class = class:gsub('\t', ' '),
@@ -81,6 +96,11 @@ local function GetPlayerStatsForSync()
     talentSpec = talentSpec:gsub('\t', ' '),
     professions = professions,
     equipment = GetPlayerEquipmentForSync(),
+    enemiesSlain = enemiesSlain,
+    dungeonsCompleted = dungeonsCompleted,
+    goldGained = goldGained,
+    highestCritValue = highestCritValue,
+    healthPotionsUsed = healthPotionsUsed,
   }
 end
 
@@ -101,10 +121,20 @@ local function SerializeStats(data)
     p1 and (p1.level or ''):gsub('\t', ' ') or '',
     p2 and (p2.name or ''):gsub('\t', ' ') or '',
     p2 and (p2.level or ''):gsub('\t', ' ') or '',
+    'S',  -- format marker: S = stats follow
+    tostring(data.enemiesSlain or 0),
+    tostring(data.dungeonsCompleted or 0),
+    tostring(data.goldGained or 0),
+    tostring(data.highestCritValue or 0),
+    tostring(data.healthPotionsUsed or 0),
     table.concat(equipParts, '\t'),
   }
   return table.concat(parts, '\t')
 end
+
+local BASE_PARTS = 8   -- race, class, level, talentSpec, p1name, p1level, p2name, p2level
+local EQUIP_START_OLD = 9
+local EQUIP_START_NEW = 15  -- after format 'S' + 5 stats
 
 local function ParseStatsMessage(msg)
   if not msg or msg == '' then return nil end
@@ -112,11 +142,13 @@ local function ParseStatsMessage(msg)
   for part in (msg .. '\t'):gmatch('([^\t]*)\t') do
     table.insert(parts, part)
   end
-  if #parts < 8 then return nil end
+  if #parts < BASE_PARTS then return nil end
+
+  local hasStats = (parts[9] == 'S') and (#parts >= 14)
+  local equipStart = hasStats and EQUIP_START_NEW or EQUIP_START_OLD
   local equipment = {}
-  -- Equipment is parts[9]..[25] (17 slots), since the full message is tab-split
   for idx = 1, #EQUIP_SLOT_ORDER do
-    local partIdx = 8 + idx
+    local partIdx = equipStart - 1 + idx
     if partIdx <= #parts and parts[partIdx] then
       local slotName = EQUIP_SLOT_ORDER[idx]
       if slotName then
@@ -127,6 +159,16 @@ local function ParseStatsMessage(msg)
       end
     end
   end
+
+  local enemiesSlain, dungeonsCompleted, goldGained, highestCritValue, healthPotionsUsed
+  if hasStats then
+    enemiesSlain = tonumber(parts[10]) or 0
+    dungeonsCompleted = tonumber(parts[11]) or 0
+    goldGained = tonumber(parts[12]) or 0
+    highestCritValue = tonumber(parts[13]) or 0
+    healthPotionsUsed = tonumber(parts[14]) or 0
+  end
+
   return {
     race = parts[1] ~= '' and parts[1] or nil,
     class = parts[2] ~= '' and parts[2] or nil,
@@ -137,6 +179,11 @@ local function ParseStatsMessage(msg)
       (parts[7] ~= '' or parts[8] ~= '') and { name = parts[7], level = parts[8] } or nil,
     },
     equipment = equipment,
+    enemiesSlain = enemiesSlain,
+    dungeonsCompleted = dungeonsCompleted,
+    goldGained = goldGained,
+    highestCritValue = highestCritValue,
+    healthPotionsUsed = healthPotionsUsed,
   }
 end
 
