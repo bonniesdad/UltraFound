@@ -94,7 +94,6 @@ local function ConfirmGroup()
   end
 
   GLOBAL_SETTINGS.groupFoundNames = names
-  GLOBAL_SETTINGS.groupSelfFound = true
   GLOBAL_SETTINGS.guildSelfFound = false
   GLOBAL_SETTINGS.groupFoundLocked = true
 

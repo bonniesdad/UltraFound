@@ -78,9 +78,6 @@ frame:RegisterEvent('AUCTION_HOUSE_SHOW')
 frame:RegisterEvent('MAIL_INBOX_UPDATE')
 
 frame:SetScript('OnEvent', function(self, event, ...)
-  local inGroupFound = GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupSelfFound
-  if not inGroupFound then return end
-
   if event == 'MAIL_INBOX_UPDATE' then
     for i = GetInboxNumItems(), 1, -1 do
       local _, _, sender, _, _, _, _, _, _, _, _, isGM = GetInboxHeaderInfo(i)

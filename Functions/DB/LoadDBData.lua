@@ -11,7 +11,6 @@ function LoadDBData()
 
   local defaultSettings = {
     guildSelfFound = false,
-    groupSelfFound = false,
     groupFoundNames = {},
     groupFoundRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
     groupFoundOffSpecRoles = {}, -- [normalizedCharacterName] = "TANK"|"HEALER"|"DPS"
