@@ -289,10 +289,11 @@ local function SerializeGuildTeam(members, totalPoints)
   if not members or #members == 0 then return nil end
   local parts = { 'G', tostring(totalPoints) }
   for _, m in ipairs(members) do
-    table.insert(parts, (m.name or ''):gsub('\t', ' '))
+    -- NOTE: gsub returns (string, nReplacements). Wrap in extra parens to pass only the string.
+    table.insert(parts, ((m.name or ''):gsub('\t', ' ')))
     table.insert(parts, tostring(m.level or ''))
-    table.insert(parts, (m.race or ''):gsub('\t', ' '))
-    table.insert(parts, (m.class or ''):gsub('\t', ' '))
+    table.insert(parts, ((m.race or ''):gsub('\t', ' ')))
+    table.insert(parts, ((m.class or ''):gsub('\t', ' ')))
     table.insert(parts, tostring(m.points or 0))
   end
   return table.concat(parts, '\t')
