@@ -29,6 +29,14 @@ local EQUIP_SLOT_ALIAS = {
 --   return out
 -- end
 
+local function SyncLog(what, ...)
+  local msg = '|cff69b4ff[UF Summary]|r ' .. what
+  if select('#', ...) > 0 then
+    msg = msg .. ': ' .. string.format(...)
+  end
+  print(msg)
+end
+
 local function BuildGroupData()
   local group = {}
   local playerName = UnitName and UnitName('player') or 'Your Character'
@@ -44,6 +52,9 @@ local function BuildGroupData()
   end
 
   local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local memberCount = 0
+  for _ in pairs(memberData) do memberCount = memberCount + 1 end
+  SyncLog('BuildGroupData', 'group=%d members, memberData has %d entries', #group, memberCount)
   local maxLevel = (IsTBC and IsTBC()) and 70 or 60
   local result = {}
 
@@ -303,6 +314,10 @@ end
 
 function UltraFound_CreateGroupFoundSummary(parent)
   local content = parent
+  SyncLog('CreateGroupFoundSummary', 'requesting sync')
+  if UltraFound_RequestGroupSync then
+    UltraFound_RequestGroupSync()
+  end
 
   local title = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
   title:SetPoint('TOP', content, 'TOP', 0, -40)
