@@ -107,6 +107,25 @@ titleBarLeftIcon:SetPoint('LEFT', titleBar, 'LEFT', 15, 3)
 titleBarLeftIcon:SetTexture(TEXTURE_PATH .. '\\bonnie-round.png')
 titleBarLeftIcon:SetTexCoord(0, 1, 0, 1)
 
+local syncButton = CreateFrame('Button', nil, titleBar, 'UIPanelButtonTemplate')
+syncButton:SetSize(50, 24)
+syncButton:SetPoint('LEFT', titleBarLeftIcon, 'RIGHT', 8, 0)
+syncButton:SetText('Sync')
+syncButton:SetScript('OnClick', function()
+  if UltraFound_RequestGroupSync then
+    UltraFound_RequestGroupSync()
+  end
+end)
+syncButton:SetScript('OnEnter', function(self)
+  if GameTooltip and GameTooltip.SetOwner then
+    GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
+    GameTooltip:SetText('Send sync update to party', 1, 1, 1)
+  end
+end)
+syncButton:SetScript('OnLeave', function()
+  if GameTooltip then GameTooltip:Hide() end
+end)
+
 local closeButton = CreateFrame('Button', nil, titleBar, 'UIPanelCloseButton')
 closeButton:SetPoint('RIGHT', titleBar, 'RIGHT', -15, 4)
 closeButton:SetSize(12, 12)
