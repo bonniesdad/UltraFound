@@ -34,7 +34,7 @@ local function SyncLog(what, ...)
   if select('#', ...) > 0 then
     msg = msg .. ': ' .. string.format(...)
   end
-  print(msg)
+  -- print(msg)
 end
 
 local function BuildGroupData()
