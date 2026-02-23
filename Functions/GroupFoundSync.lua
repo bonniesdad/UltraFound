@@ -3,6 +3,27 @@
 
 local ADDON_MSG_PREFIX = 'UltraFound'
 
+local function SyncLog(what, ...)
+  local msg = '|cff69b4ff[UF Sync]|r ' .. what
+  if select('#', ...) > 0 then
+    msg = msg .. ': ' .. string.format(...)
+  end
+  print(msg)
+end
+
+-- Use C_ChatInfo.SendAddonMessage (Classic Era) when global SendAddonMessage is not available
+local function DoSendAddonMessage(prefix, message, channel)
+  if SendAddonMessage then
+    SendAddonMessage(prefix, message, channel)
+    return true
+  end
+  if C_ChatInfo and C_ChatInfo.SendAddonMessage then
+    C_ChatInfo.SendAddonMessage(prefix, message, channel)
+    return true
+  end
+  return false
+end
+
 -- Equipment slot order and WoW inventory slot names (for GetInventorySlotInfo)
 local EQUIP_SLOT_ORDER = {
   'Head', 'Cape', 'Amulet', 'Shoulders', 'Bracers', 'Chest', 'Gloves', 'Belt', 'Boots', 'Legs',
@@ -119,7 +140,10 @@ local function ParseStatsMessage(msg)
 end
 
 local function StoreMemberData(normalizedName, data)
-  if not GLOBAL_SETTINGS or not normalizedName then return end
+  if not GLOBAL_SETTINGS or not normalizedName then
+    SyncLog('StoreMemberData skipped', 'missing GLOBAL_SETTINGS or normalizedName')
+    return
+  end
   if not GLOBAL_SETTINGS.groupFoundMemberData then
     GLOBAL_SETTINGS.groupFoundMemberData = {}
   end
@@ -128,6 +152,7 @@ local function StoreMemberData(normalizedName, data)
     data.equipment = existing.equipment
   end
   GLOBAL_SETTINGS.groupFoundMemberData[normalizedName] = data
+  SyncLog('StoreMemberData stored', '%s L%d %s', normalizedName, data.level or 0, data.class or '?')
   if SaveCharacterSettings then
     SaveCharacterSettings(GLOBAL_SETTINGS)
   end
@@ -242,7 +267,10 @@ local function ParseGuildTeamMessage(msg)
 end
 
 local function StoreGuildTeamData(sender, teamData)
-  if not GLOBAL_SETTINGS or not sender or not teamData then return end
+  if not GLOBAL_SETTINGS or not sender or not teamData then
+    SyncLog('StoreGuildTeamData skipped', 'missing GLOBAL_SETTINGS, sender or teamData')
+    return
+  end
   if not GLOBAL_SETTINGS.guildTeamsData then
     GLOBAL_SETTINGS.guildTeamsData = {}
   end
@@ -252,43 +280,87 @@ local function StoreGuildTeamData(sender, teamData)
     members = teamData.members,
     totalPoints = teamData.totalPoints,
   }
+  SyncLog('StoreGuildTeamData stored', '%s: %d members, %d pts', sender, #teamData.members, teamData.totalPoints)
   if SaveCharacterSettings then
     SaveCharacterSettings(GLOBAL_SETTINGS)
   end
 end
 
 local function SendGuildTeamStats()
-  if not GLOBAL_SETTINGS then return end
-  if not (GLOBAL_SETTINGS.groupSelfFound or GLOBAL_SETTINGS.guildSelfFound) then return end
+  SyncLog('SendGuildTeamStats called')
+  if not GLOBAL_SETTINGS then
+    SyncLog('SendGuildTeamStats early exit', 'no GLOBAL_SETTINGS')
+    return
+  end
+  if not (GLOBAL_SETTINGS.groupSelfFound or GLOBAL_SETTINGS.guildSelfFound) then
+    SyncLog('SendGuildTeamStats early exit', 'groupSelfFound=%s guildSelfFound=%s', tostring(GLOBAL_SETTINGS.groupSelfFound), tostring(GLOBAL_SETTINGS.guildSelfFound))
+    return
+  end
   -- Classic: GetGuildInfo("player") returns guild name if in guild, nil otherwise
-  if not (GetGuildInfo and GetGuildInfo('player')) then return end
-  if not SendAddonMessage then return end
+  if not (GetGuildInfo and GetGuildInfo('player')) then
+    SyncLog('SendGuildTeamStats early exit', 'not in guild')
+    return
+  end
+  if not (SendAddonMessage or (C_ChatInfo and C_ChatInfo.SendAddonMessage)) then
+    SyncLog('SendGuildTeamStats early exit', 'SendAddonMessage / C_ChatInfo.SendAddonMessage not available')
+    return
+  end
 
   local members, totalPoints = BuildOurTeamForGuildSync()
-  if not members or #members == 0 then return end
+  if not members or #members == 0 then
+    SyncLog('SendGuildTeamStats early exit', 'no members to send (members=%s)', tostring(members and #members))
+    return
+  end
 
   local msg = SerializeGuildTeam(members, totalPoints)
-  if msg and #msg < 255 then
-    SendAddonMessage(ADDON_MSG_PREFIX, msg, 'GUILD')
+  if not msg then
+    SyncLog('SendGuildTeamStats early exit', 'SerializeGuildTeam returned nil')
+    return
   end
+  if #msg >= 255 then
+    SyncLog('SendGuildTeamStats skipped', 'message too long (%d chars)', #msg)
+    return
+  end
+  DoSendAddonMessage(ADDON_MSG_PREFIX, msg, 'GUILD')
+  SyncLog('SendGuildTeamStats sent', '%d members, %d pts, %d chars', #members, totalPoints, #msg)
 end
 
 local function SendMyStats()
-  if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then return end
-  if GetNumGroupMembers and GetNumGroupMembers() < 1 then return end
+  SyncLog('SendMyStats called')
+  if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then
+    SyncLog('SendMyStats early exit', 'no settings or groupSelfFound off (groupSelfFound=%s)', tostring(GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupSelfFound))
+    return
+  end
+  local numMembers = GetNumGroupMembers and GetNumGroupMembers() or 0
+  if numMembers < 1 then
+    SyncLog('SendMyStats early exit', 'GetNumGroupMembers=%d (need party/raid)', numMembers)
+    return
+  end
   local myName = UnitName and UnitName('player')
-  if not myName then return end
+  if not myName then
+    SyncLog('SendMyStats early exit', 'UnitName(player) is nil')
+    return
+  end
   local data = GetPlayerStatsForSync()
   StoreMemberData(NormalizeName(myName), data)
   local msg = SerializeStats(data)
-  if msg and SendAddonMessage then
-    if #msg >= 255 then
-      data.equipment = {}
-      msg = SerializeStats(data)
-    end
-    if msg and #msg < 255 then
-      SendAddonMessage(ADDON_MSG_PREFIX, msg, 'PARTY')
-    end
+  if not msg then
+    SyncLog('SendMyStats early exit', 'SerializeStats returned nil')
+    return
+  end
+  if not (SendAddonMessage or (C_ChatInfo and C_ChatInfo.SendAddonMessage)) then
+    SyncLog('SendMyStats early exit', 'SendAddonMessage / C_ChatInfo.SendAddonMessage not available')
+    return
+  end
+  if #msg >= 255 then
+    data.equipment = {}
+    msg = SerializeStats(data)
+  end
+  if msg and #msg < 255 then
+    DoSendAddonMessage(ADDON_MSG_PREFIX, msg, 'PARTY')
+    SyncLog('SendMyStats sent', '%s L%d %s (%d chars)', myName, data.level or 0, data.class or '?', #msg)
+  else
+    SyncLog('SendMyStats skipped', 'message still too long after equipment strip (%d)', msg and #msg or 0)
   end
 end
 
@@ -299,11 +371,17 @@ frame:RegisterEvent('GUILD_ROSTER_UPDATE')
 frame:RegisterEvent('CHAT_MSG_ADDON')
 
 if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
-  C_ChatInfo.RegisterAddonMessagePrefix(ADDON_MSG_PREFIX)
+  local ok, err = pcall(function()
+    C_ChatInfo.RegisterAddonMessagePrefix(ADDON_MSG_PREFIX)
+  end)
+  SyncLog('Addon prefix', ok and 'registered' or ('failed: %s'):format(tostring(err)))
+else
+  SyncLog('Addon prefix', 'C_ChatInfo.RegisterAddonMessagePrefix not available')
 end
 
 frame:SetScript('OnEvent', function(self, event, ...)
   if event == 'GROUP_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' or event == 'GUILD_ROSTER_UPDATE' then
+    SyncLog('Event', '%s', event)
     if event == 'PLAYER_ENTERING_WORLD' then
       frame:SetScript('OnUpdate', function(f)
         f:SetScript('OnUpdate', nil)
@@ -319,27 +397,46 @@ frame:SetScript('OnEvent', function(self, event, ...)
 
   if event == 'CHAT_MSG_ADDON' then
     local prefix, msg, channel, sender = ...
-    if prefix ~= ADDON_MSG_PREFIX or not sender or sender == '' then return end
+    if prefix ~= ADDON_MSG_PREFIX then return end
+    if not sender or sender == '' then return end
+
+    SyncLog('CHAT_MSG_ADDON received', 'prefix=%s channel=%s sender=%s len=%d', prefix, channel, sender, msg and #msg or 0)
 
     if channel == 'PARTY' then
-      if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then return end
-      if not IsAllowedByGroupList then return end
-      if not IsAllowedByGroupList(sender) then return end
-      local data = ParseStatsMessage(msg)
-      if data then
-        StoreMemberData(NormalizeName(sender), data)
+      if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupSelfFound then
+        SyncLog('PARTY msg ignored', 'no settings or groupSelfFound off')
+        return
       end
+      if not IsAllowedByGroupList then
+        SyncLog('PARTY msg ignored', 'IsAllowedByGroupList not available')
+        return
+      end
+      if not IsAllowedByGroupList(sender) then
+        SyncLog('PARTY msg ignored', 'sender %s not in group list', sender)
+        return
+      end
+      local data = ParseStatsMessage(msg)
+      if not data then
+        SyncLog('PARTY msg ignored', 'ParseStatsMessage failed (msg len=%d)', msg and #msg or 0)
+        return
+      end
+      StoreMemberData(NormalizeName(sender), data)
     elseif channel == 'GUILD' then
       local teamData = ParseGuildTeamMessage(msg)
-      if teamData then
-        StoreGuildTeamData(sender, teamData)
+      if not teamData then
+        SyncLog('GUILD msg ignored', 'ParseGuildTeamMessage failed (msg len=%d)', msg and #msg or 0)
+        return
       end
+      StoreGuildTeamData(sender, teamData)
+    else
+      SyncLog('CHAT_MSG_ADDON ignored', 'channel %s not PARTY/GUILD', tostring(channel))
     end
   end
 end)
 
 -- Expose for UI refresh after receiving data (e.g. GroupFoundSummary can call this)
 function UltraFound_RequestGroupSync()
+  SyncLog('UltraFound_RequestGroupSync called')
   SendMyStats()
   SendGuildTeamStats()
 end
