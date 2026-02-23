@@ -62,10 +62,11 @@ local function GetPlayerStatsForSync()
   local talentSpec = ''
   local professions = {}
 
+  -- Only include abandonable skills (professions); languages are not abandonable
   if GetNumSkillLines and GetSkillLineInfo then
     for i = 1, GetNumSkillLines() do
-      local skillName, isHeader, _, skillRank, _, _, skillMaxRank = GetSkillLineInfo(i)
-      if not isHeader and skillName and skillName ~= '' and skillMaxRank and skillMaxRank >= 225 then
+      local skillName, header, _, skillRank, _, _, skillMaxRank, isAbandonable = GetSkillLineInfo(i)
+      if header ~= 1 and skillName and skillName ~= '' and skillMaxRank and skillMaxRank >= 225 and isAbandonable == 1 then
         local levelStr = (skillRank and skillMaxRank) and (tostring(skillRank) .. '/' .. tostring(skillMaxRank)) or ''
         table.insert(professions, { name = skillName, level = levelStr })
         if #professions >= 2 then break end
@@ -113,16 +114,16 @@ local function ParseStatsMessage(msg)
   end
   if #parts < 8 then return nil end
   local equipment = {}
-  if #parts >= 9 and parts[9] and parts[9] ~= '' then
-    local idx = 1
-    for idStr in (parts[9] .. '\t'):gmatch('([^\t]*)\t') do
+  -- Equipment is parts[9]..[25] (17 slots), since the full message is tab-split
+  for idx = 1, #EQUIP_SLOT_ORDER do
+    local partIdx = 8 + idx
+    if partIdx <= #parts and parts[partIdx] then
       local slotName = EQUIP_SLOT_ORDER[idx]
       if slotName then
-        local id = tonumber(idStr)
+        local id = tonumber(parts[partIdx])
         if id and id > 0 then
           equipment[slotName] = id
         end
-        idx = idx + 1
       end
     end
   end
@@ -395,12 +396,16 @@ frame:SetScript('OnEvent', function(self, event, ...)
     SyncLog('CHAT_MSG_ADDON received', 'prefix=%s channel=%s sender=%s len=%d', prefix, channel, sender, msg and #msg or 0)
 
     if channel == 'PARTY' then
+      SyncLog('PARTY raw msg', '%s', msg and msg:gsub('\t', ' | ') or 'nil')
       if not IsAllowedByGroupList then
         SyncLog('PARTY msg ignored', 'IsAllowedByGroupList not available')
         return
       end
       if not IsAllowedByGroupList(sender) then
-        SyncLog('PARTY msg ignored', 'sender %s not in group list', sender)
+        local list = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+        local listStr = table.concat(list, ', ')
+        local normSender = NormalizeName and NormalizeName(sender) or sender
+        SyncLog('PARTY msg ignored', 'sender %s (norm=%s) not in group list [%s]', sender, tostring(normSender), listStr)
         return
       end
       local data = ParseStatsMessage(msg)
@@ -408,6 +413,13 @@ frame:SetScript('OnEvent', function(self, event, ...)
         SyncLog('PARTY msg ignored', 'ParseStatsMessage failed (msg len=%d)', msg and #msg or 0)
         return
       end
+      local equipCount = 0
+      if data.equipment then for _ in pairs(data.equipment) do equipCount = equipCount + 1 end end
+      local p1 = data.professions and data.professions[1]
+      local p2 = data.professions and data.professions[2]
+      SyncLog('PARTY parsed', 'sender=%s race=%s class=%s level=%s pr1=%s pr2=%s equipSlots=%d',
+        sender, tostring(data.race), tostring(data.class), tostring(data.level),
+        p1 and (p1.name or '') or 'nil', p2 and (p2.name or '') or 'nil', equipCount)
       StoreMemberData(NormalizeName(sender), data)
     elseif channel == 'GUILD' then
       local teamData = ParseGuildTeamMessage(msg)
