@@ -119,7 +119,7 @@ end)
 syncButton:SetScript('OnEnter', function(self)
   if GameTooltip and GameTooltip.SetOwner then
     GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
-    GameTooltip:SetText('Send sync update to party', 1, 1, 1)
+    GameTooltip:SetText('Request stats from party & send yours', 1, 1, 1)
   end
 end)
 syncButton:SetScript('OnLeave', function()

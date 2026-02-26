@@ -256,16 +256,19 @@ local function buildGuildLeaderboardData()
     table.insert(teams, { senderName = playerName, members = ourMembers, totalPoints = ourTotalPoints })
   end
 
-  -- Teams from guild addon messages
+  -- Teams from guild addon messages (deduped by canonical member set)
   local guildTeams = GLOBAL_SETTINGS and GLOBAL_SETTINGS.guildTeamsData or {}
-  local myNorm = NormalizeName and NormalizeName(playerName) or string.lower(playerName or '')
+  local ourTeamCanonicalKey = UltraFound_GetTeamCanonicalKey and UltraFound_GetTeamCanonicalKey(ourMembers) or ''
   for key, team in pairs(guildTeams) do
-    if team and team.members and #team.members > 0 and key ~= myNorm then
-      table.insert(teams, {
-        senderName = team.senderName or key,
-        members = team.members,
-        totalPoints = team.totalPoints or 0,
-      })
+    if team and team.members and #team.members > 0 then
+      local teamCanonicalKey = UltraFound_GetTeamCanonicalKey and UltraFound_GetTeamCanonicalKey(team.members) or key
+      if teamCanonicalKey ~= ourTeamCanonicalKey then
+        table.insert(teams, {
+          senderName = team.senderName or key,
+          members = team.members,
+          totalPoints = team.totalPoints or 0,
+        })
+      end
     end
   end
 
