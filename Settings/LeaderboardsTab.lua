@@ -128,6 +128,35 @@ local function getTeamNames()
   return names
 end
 
+local function getPlayerRowFromUltraStatisticsDB()
+  -- Get our own stats directly from UltraStatisticsDB (no addon messages).
+  local db = _G.UltraStatisticsDB
+  if not db or not db.characterStats or type(db.characterStats) ~= 'table' then return nil end
+  local currentGUID = UnitGUID and UnitGUID('player')
+  if not currentGUID then return nil end
+  local stats = db.characterStats[currentGUID]
+  if not stats or type(stats) ~= 'table' then return nil end
+  local level = UnitLevel and UnitLevel('player') or nil
+  local enemiesSlain = stats.enemiesSlain or 0
+  local dungeonsCompleted = stats.dungeonsCompleted or 0
+  local highestCritValue = stats.highestCritValue or 0
+  local healthPotionsUsed = stats.healthPotionsUsed or 0
+  local goldGained = stats.goldGained or 0
+  local points = calculatePoints(level or 0, enemiesSlain, dungeonsCompleted, goldGained)
+  local displayName = UnitName and UnitName('player') or getCharacterName(currentGUID)
+  return {
+    name = displayName,
+    guid = currentGUID,
+    level = level,
+    enemiesSlain = enemiesSlain,
+    dungeonsCompleted = dungeonsCompleted,
+    highestCritValue = highestCritValue,
+    healthPotionsUsed = healthPotionsUsed,
+    goldGained = goldGained,
+    points = points,
+  }
+end
+
 local function buildTeamLeaderboardData()
   local allData = buildLeaderboardData()
   local teamNames = getTeamNames()
@@ -138,55 +167,79 @@ local function buildTeamLeaderboardData()
     local norm = NormalizeName and NormalizeName(row.name) or string.lower(row.name or '')
     if norm ~= '' then nameToRow[norm] = row end
   end
+  local playerNorm = NormalizeName and NormalizeName(UnitName and UnitName('player') or '') or ''
   local result = {}
   for _, name in ipairs(teamNames) do
     local norm = NormalizeName and NormalizeName(name) or string.lower(name or '')
+    local isPlayer = norm == playerNorm
     local row = nameToRow[norm]
+    -- For our own character: always use UltraStatisticsDB directly, never synced data
+    if isPlayer then
+      row = getPlayerRowFromUltraStatisticsDB() or row
+    end
     if row then
-      -- For teammates: prefer synced stats (from their client) when available
-      local synced = memberData[norm]
-      local isPlayer = norm == (NormalizeName and NormalizeName(UnitName and UnitName('player')) or string.lower(UnitName and UnitName('player') or ''))
-      if not isPlayer and synced and (synced.enemiesSlain or synced.dungeonsCompleted or synced.goldGained) then
-        row = {
-          name = row.name,
-          guid = row.guid,
-          level = synced.level or row.level,
-          enemiesSlain = synced.enemiesSlain or row.enemiesSlain or 0,
-          dungeonsCompleted = synced.dungeonsCompleted or row.dungeonsCompleted or 0,
-          highestCritValue = synced.highestCritValue or row.highestCritValue or 0,
-          healthPotionsUsed = synced.healthPotionsUsed or row.healthPotionsUsed or 0,
-          goldGained = synced.goldGained or row.goldGained or 0,
-          points = calculatePoints(synced.level or row.level or 0, synced.enemiesSlain or row.enemiesSlain or 0, synced.dungeonsCompleted or row.dungeonsCompleted or 0, synced.goldGained or row.goldGained or 0),
-        }
+      -- For teammates only: prefer synced stats (from their client) when available
+      if not isPlayer then
+        local synced = memberData[norm]
+        if synced and (synced.enemiesSlain or synced.dungeonsCompleted or synced.goldGained) then
+          row = {
+            name = row.name,
+            guid = row.guid,
+            level = synced.level or row.level,
+            enemiesSlain = synced.enemiesSlain or row.enemiesSlain or 0,
+            dungeonsCompleted = synced.dungeonsCompleted or row.dungeonsCompleted or 0,
+            highestCritValue = synced.highestCritValue or row.highestCritValue or 0,
+            healthPotionsUsed = synced.healthPotionsUsed or row.healthPotionsUsed or 0,
+            goldGained = synced.goldGained or row.goldGained or 0,
+            points = calculatePoints(synced.level or row.level or 0, synced.enemiesSlain or row.enemiesSlain or 0, synced.dungeonsCompleted or row.dungeonsCompleted or 0, synced.goldGained or row.goldGained or 0),
+          }
+        end
       end
       table.insert(result, row)
     else
-      -- No local data; use synced stats from group member if available
-      local synced = memberData[norm]
-      local level, enemiesSlain, dungeonsCompleted, highestCritValue, healthPotionsUsed, goldGained, points = nil, 0, 0, 0, 0, 0, 0
-      if synced then
-        level = synced.level
-        enemiesSlain = synced.enemiesSlain or 0
-        dungeonsCompleted = synced.dungeonsCompleted or 0
-        highestCritValue = synced.highestCritValue or 0
-        healthPotionsUsed = synced.healthPotionsUsed or 0
-        goldGained = synced.goldGained or 0
-        points = calculatePoints(level or 0, enemiesSlain, dungeonsCompleted, goldGained)
+      -- No local data in nameToRow; for self use UltraStatisticsDB, for others use synced
+      if isPlayer then
+        local directRow = getPlayerRowFromUltraStatisticsDB()
+        if directRow then
+          table.insert(result, directRow)
+        else
+          local level = (UnitLevel and UnitLevel('player')) or nil
+          table.insert(result, {
+            name = name,
+            guid = UnitGUID and UnitGUID('player'),
+            level = level,
+            enemiesSlain = 0,
+            dungeonsCompleted = 0,
+            highestCritValue = 0,
+            healthPotionsUsed = 0,
+            goldGained = 0,
+            points = calculatePoints(level or 0, 0, 0, 0),
+          })
+        end
       else
-        local isPlayer = norm == (NormalizeName and NormalizeName(UnitName and UnitName('player')) or string.lower(UnitName and UnitName('player') or ''))
-        level = (isPlayer and UnitLevel) and UnitLevel('player') or nil
+        local synced = memberData[norm]
+        local level, enemiesSlain, dungeonsCompleted, highestCritValue, healthPotionsUsed, goldGained, points = nil, 0, 0, 0, 0, 0, 0
+        if synced then
+          level = synced.level
+          enemiesSlain = synced.enemiesSlain or 0
+          dungeonsCompleted = synced.dungeonsCompleted or 0
+          highestCritValue = synced.highestCritValue or 0
+          healthPotionsUsed = synced.healthPotionsUsed or 0
+          goldGained = synced.goldGained or 0
+          points = calculatePoints(level or 0, enemiesSlain, dungeonsCompleted, goldGained)
+        end
+        table.insert(result, {
+          name = name,
+          guid = nil,
+          level = level,
+          enemiesSlain = enemiesSlain,
+          dungeonsCompleted = dungeonsCompleted,
+          highestCritValue = highestCritValue,
+          healthPotionsUsed = healthPotionsUsed,
+          goldGained = goldGained,
+          points = points,
+        })
       end
-      table.insert(result, {
-        name = name,
-        guid = nil,
-        level = level,
-        enemiesSlain = enemiesSlain,
-        dungeonsCompleted = dungeonsCompleted,
-        highestCritValue = highestCritValue,
-        healthPotionsUsed = healthPotionsUsed,
-        goldGained = goldGained,
-        points = points,
-      })
     end
   end
   table.sort(result, function(a, b) return (a.points or 0) > (b.points or 0) end)

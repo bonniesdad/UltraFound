@@ -57,10 +57,13 @@ local function BuildGroupData()
   SyncLog('BuildGroupData', 'group=%d members, memberData has %d entries', #group, memberCount)
   local maxLevel = (IsTBC and IsTBC()) and 70 or 60
   local result = {}
+  local playerNorm = NormalizeName and NormalizeName(UnitName and UnitName('player') or '') or ''
+  local directPlayerData = UltraFound_GetPlayerDisplayDataDirect and UltraFound_GetPlayerDisplayDataDirect() or {}
 
   for i, name in ipairs(group) do
     local key = NormalizeName and NormalizeName(name) or name
-    local data = memberData[key] or {}
+    local isPlayer = key == playerNorm
+    local data = isPlayer and directPlayerData or (memberData[key] or {})
     -- local mock = USE_GROUP_FOUND_MOCK_DATA and MOCK_MEMBERS[i]
     -- if mock then
     --   data = {
