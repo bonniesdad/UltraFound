@@ -116,6 +116,21 @@ local function GetPlayerStatsForSync()
   }
 end
 
+-- For UI display: get our own character's data directly from API (no addon messages).
+-- Returns { race, class, level, talentSpec, professions, equipment }.
+function UltraFound_GetPlayerDisplayDataDirect()
+  local full = GetPlayerStatsForSync()
+  if not full then return {} end
+  return {
+    race = full.race,
+    class = full.class,
+    level = full.level,
+    talentSpec = full.talentSpec,
+    professions = full.professions or {},
+    equipment = full.equipment or {},
+  }
+end
+
 local function SerializeStats(data)
   local p1 = data.professions and data.professions[1]
   local p2 = data.professions and data.professions[2]
