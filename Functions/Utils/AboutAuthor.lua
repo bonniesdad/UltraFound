@@ -38,10 +38,6 @@ function UHC_CreateAboutAuthorSection(parent, point, relativeTo, relativePoint, 
   streamsTitle:SetText('BonniesDadTV on Twitch')
   streamsTitle:SetTextColor(0.922, 0.871, 0.761)
 
-  local streamSchedule = aboutAuthorFrame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
-  streamSchedule:SetPoint('TOPLEFT', streamsTitle, 'BOTTOMLEFT', 0, -8)
-  streamSchedule:SetText('10am - 5pm GMT every weekday')
-  streamSchedule:SetTextColor(0.8, 0.8, 0.8)
 
   local aboutText = aboutAuthorFrame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
   aboutText:SetPoint('TOPLEFT', profilePictureFrame, 'BOTTOMLEFT', 0, -15)
