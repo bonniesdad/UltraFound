@@ -1,5 +1,15 @@
 -- Patch notes for Ultra Found addon (addon-scoped so Ultra Hardcore cannot overwrite)
 UltraFound_PATCH_NOTES = { {
+  version = '1.1.0',
+  date = '2026-02-26',
+  notes = {
+    'BUG FIXES:',
+    '• Fix: Duplicated guild teams in leaderboards.',
+    '',
+    'OTHER:',
+    '• Sync button to request updates from other team members.',
+  },
+},{
   version = '1.0.0',
   date = '2026-02-03',
   notes = {
