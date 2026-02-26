@@ -1,7 +1,7 @@
 ## Interface: 11508, 20505
 ## Title: Ultra Found
 ## OptionalDeps: UltraStatistics
-## Version: 1.0.0
+## Version: 1.1.0
 ## Author: BonniesDad
 ## Notes: Group Found playthrough for WoW Classic.
 ## SavedVariables: UltraFoundDB
