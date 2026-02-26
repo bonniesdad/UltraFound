@@ -327,21 +327,49 @@ local function ParseGuildTeamMessage(msg)
   return { members = members, totalPoints = totalPoints }
 end
 
+-- Canonical key for a team: sorted normalized member names, so same team = same key regardless of order.
+-- Exposed for LeaderboardsTab to skip our team when displaying guild teams.
+function UltraFound_GetTeamCanonicalKey(members)
+  if not members or #members == 0 then return '' end
+  local names = {}
+  for _, m in ipairs(members) do
+    local n = m and (m.name or m)
+    if n and n ~= '' then
+      local norm = NormalizeName and NormalizeName(n) or string.lower(tostring(n))
+      if norm ~= '' then table.insert(names, norm) end
+    end
+  end
+  table.sort(names)
+  return table.concat(names, ',')
+end
+
 local function StoreGuildTeamData(sender, teamData)
-  if not GLOBAL_SETTINGS or not sender or not teamData then
+  if not GLOBAL_SETTINGS or not sender or not teamData or not teamData.members or #teamData.members == 0 then
     SyncLog('StoreGuildTeamData skipped', 'missing GLOBAL_SETTINGS, sender or teamData')
     return
   end
   if not GLOBAL_SETTINGS.guildTeamsData then
     GLOBAL_SETTINGS.guildTeamsData = {}
   end
-  local key = NormalizeName and NormalizeName(sender) or string.lower(sender or '')
-  GLOBAL_SETTINGS.guildTeamsData[key] = {
-    senderName = sender,
-    members = teamData.members,
-    totalPoints = teamData.totalPoints,
-  }
-  SyncLog('StoreGuildTeamData stored', '%s: %d members, %d pts', sender, #teamData.members, teamData.totalPoints)
+  local canonicalKey = UltraFound_GetTeamCanonicalKey(teamData.members)
+  if canonicalKey == '' then return end
+
+  -- Find best existing entry for this team (same member set, any sender)
+  local best = { senderName = sender, members = teamData.members, totalPoints = teamData.totalPoints or 0 }
+  local incomingPts = teamData.totalPoints or 0
+  for k, v in pairs(GLOBAL_SETTINGS.guildTeamsData) do
+    if v and v.members and UltraFound_GetTeamCanonicalKey(v.members) == canonicalKey then
+      local existingPts = v.totalPoints or 0
+      if existingPts > incomingPts then
+        best = v
+        incomingPts = existingPts
+      end
+      GLOBAL_SETTINGS.guildTeamsData[k] = nil
+    end
+  end
+
+  GLOBAL_SETTINGS.guildTeamsData[canonicalKey] = best
+  SyncLog('StoreGuildTeamData stored', '%s: %d members, %d pts (key=%s)', best.senderName, #best.members, best.totalPoints, canonicalKey)
   if SaveCharacterSettings then
     SaveCharacterSettings(GLOBAL_SETTINGS)
   end
@@ -380,6 +408,22 @@ local function SendGuildTeamStats()
   end
   DoSendAddonMessage(ADDON_MSG_PREFIX, msg, 'GUILD')
   SyncLog('SendGuildTeamStats sent', '%d members, %d pts, %d chars', #members, totalPoints, #msg)
+end
+
+-- Send a sync request to party: recipients will respond with their stats
+local function SendSyncRequest()
+  SyncLog('SendSyncRequest called')
+  local numMembers = GetNumGroupMembers and GetNumGroupMembers() or 0
+  if numMembers < 2 then
+    SyncLog('SendSyncRequest early exit', 'not in party/raid or solo (numMembers=%d)', numMembers)
+    return
+  end
+  if not (SendAddonMessage or (C_ChatInfo and C_ChatInfo.SendAddonMessage)) then
+    SyncLog('SendSyncRequest early exit', 'SendAddonMessage not available')
+    return
+  end
+  DoSendAddonMessage(ADDON_MSG_PREFIX, 'REQ', 'PARTY')
+  SyncLog('SendSyncRequest sent', 'REQ to party')
 end
 
 local function SendMyStats()
@@ -457,6 +501,12 @@ frame:SetScript('OnEvent', function(self, event, ...)
 
     if channel == 'PARTY' then
       SyncLog('PARTY raw msg', '%s', msg and msg:gsub('\t', ' | ') or 'nil')
+      -- Sync request: sender wants us to send our stats back
+      if msg == 'REQ' then
+        SyncLog('PARTY received REQ', 'from %s, responding with SendMyStats', sender)
+        SendMyStats()
+        return
+      end
       if not IsAllowedByGroupList then
         SyncLog('PARTY msg ignored', 'IsAllowedByGroupList not available')
         return
@@ -495,8 +545,10 @@ frame:SetScript('OnEvent', function(self, event, ...)
 end)
 
 -- Expose for UI refresh after receiving data (e.g. GroupFoundSummary can call this)
+-- Sends a REQ to party so others reply with their stats, then sends our own stats too.
 function UltraFound_RequestGroupSync()
   SyncLog('UltraFound_RequestGroupSync called')
+  SendSyncRequest()
   SendMyStats()
   SendGuildTeamStats()
 end
