@@ -1,5 +1,5 @@
 -- Load saved settings on login
-function LoadDBData()
+function UltraFound_LoadDBData()
   if not UltraFoundDB then
     UltraFoundDB = {}
   end
@@ -30,5 +30,5 @@ function LoadDBData()
     end
   end
 
-  GLOBAL_SETTINGS = UltraFoundDB.characterSettings[characterGUID]
+  ULTRA_FOUND_GLOBAL_SETTINGS = UltraFoundDB.characterSettings[characterGUID]
 end

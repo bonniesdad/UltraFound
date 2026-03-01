@@ -1,13 +1,13 @@
 -- Reusable Discord invite dialog and button (same pattern as UltraHardcore)
 
-UHC_DiscordInvite = UHC_DiscordInvite or {}
+UltraFound_DiscordInvite = UltraFound_DiscordInvite or {}
 
 do
   local dialogFrame
   local editBox
   local inviteUrl = 'https://discord.gg/zuSPDNhYEN'
 
-  function UHC_DiscordInvite_ShowDialog()
+  function UltraFound_DiscordInvite_ShowDialog()
     if dialogFrame and dialogFrame:IsShown() then
       dialogFrame:Raise()
       if editBox and C_Timer and C_Timer.After then
@@ -84,7 +84,7 @@ do
       button:SetPoint(point, relativeTo, relativePoint, xOfs or 0, yOfs or 0)
     end
     button:SetText(label or 'Discord Invite Link')
-    button:SetScript('OnClick', function() UHC_DiscordInvite_ShowDialog() end)
+    button:SetScript('OnClick', function() UltraFound_DiscordInvite_ShowDialog() end)
     return button
   end
 end

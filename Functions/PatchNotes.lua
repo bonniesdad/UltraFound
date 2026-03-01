@@ -1,5 +1,14 @@
 -- Patch notes for Ultra Found addon (addon-scoped so Ultra Hardcore cannot overwrite)
-UltraFound_PATCH_NOTES = { {
+ULTRA_FOUND_PATCH_NOTES = { 
+  {
+    version = '1.2.0',
+    date = '2026-02-28',
+    notes = {
+      'BUG FIXES:',
+      '• Remove duplicate function naming with sister addons (ultra hardcore and statistics)',
+    },
+  },
+  {
   version = '1.1.0',
   date = '2026-02-26',
   notes = {

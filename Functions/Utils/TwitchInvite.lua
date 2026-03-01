@@ -1,13 +1,13 @@
 -- Reusable Twitch invite dialog and button (same pattern as UltraHardcore)
 
-UHC_TwitchInvite = UHC_TwitchInvite or {}
+UltraFound_TwitchInvite = UltraFound_TwitchInvite or {}
 
 do
   local dialogFrame
   local editBox
   local twitchUrl = 'https://www.twitch.tv/BonniesDadTV'
 
-  function UHC_TwitchInvite_ShowDialog()
+  function UltraFound_TwitchInvite_ShowDialog()
     if dialogFrame and dialogFrame:IsShown() then
       dialogFrame:Raise()
       if editBox and C_Timer and C_Timer.After then
@@ -84,7 +84,7 @@ do
       button:SetPoint(point, relativeTo, relativePoint, xOfs or 0, yOfs or 0)
     end
     button:SetText(label or 'Twitch Channel')
-    button:SetScript('OnClick', function() UHC_TwitchInvite_ShowDialog() end)
+    button:SetScript('OnClick', function() UltraFound_TwitchInvite_ShowDialog() end)
     return button
   end
 end

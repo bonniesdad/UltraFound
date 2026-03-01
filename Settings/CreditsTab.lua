@@ -22,7 +22,7 @@ function UltraFound_InitializeCreditsTab(tabContents)
 
   local contentBgW = contentBackground:GetWidth()
   local aboutAuthorW = (contentBgW and contentBgW > 100) and (contentBgW - 40) or 470
-  local aboutAuthorFrame = UHC_CreateAboutAuthorSection(
+  local aboutAuthorFrame = UltraFound_CreateAboutAuthorSection(
     contentBackground, 'TOPLEFT', contentBackground, 'TOPLEFT', 20, -20, aboutAuthorW
   )
 

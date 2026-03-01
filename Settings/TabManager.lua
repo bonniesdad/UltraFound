@@ -155,10 +155,10 @@ function UltraFound_SwitchToTab(index)
   tabButtons[index]:SetBackdropBorderColor(fadedR, fadedG, fadedB, 1)
   activeTab = index
 
-  if GLOBAL_SETTINGS then
-    GLOBAL_SETTINGS.lastOpenedSettingsTab = index
-    if SaveCharacterSettings then
-      SaveCharacterSettings(GLOBAL_SETTINGS)
+  if ULTRA_FOUND_GLOBAL_SETTINGS then
+    ULTRA_FOUND_GLOBAL_SETTINGS.lastOpenedSettingsTab = index
+    if UltraFound_SaveCharacterSettings then
+      UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
     end
   end
 
@@ -178,8 +178,8 @@ end
 
 function UltraFound_SetDefaultTab()
   local defaultIndex = 1
-  if GLOBAL_SETTINGS and GLOBAL_SETTINGS.lastOpenedSettingsTab then
-    local saved = GLOBAL_SETTINGS.lastOpenedSettingsTab
+  if ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.lastOpenedSettingsTab then
+    local saved = ULTRA_FOUND_GLOBAL_SETTINGS.lastOpenedSettingsTab
     if type(saved) == 'number' and saved >= 1 and saved <= 4 and tabContents[saved] then
       defaultIndex = saved
     end

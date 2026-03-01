@@ -42,7 +42,7 @@ local function BuildGroupData()
   local playerName = UnitName and UnitName('player') or 'Your Character'
   table.insert(group, playerName)
 
-  local saved = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+  local saved = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames) or {}
   for _, name in ipairs(saved) do
     table.insert(group, name)
   end
@@ -51,17 +51,17 @@ local function BuildGroupData()
     table.insert(group, 'Your Character')
   end
 
-  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local memberData = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData) or {}
   local memberCount = 0
   for _ in pairs(memberData) do memberCount = memberCount + 1 end
   SyncLog('BuildGroupData', 'group=%d members, memberData has %d entries', #group, memberCount)
-  local maxLevel = (IsTBC and IsTBC()) and 70 or 60
+  local maxLevel = (UltraFound_IsTBC and UltraFound_IsTBC()) and 70 or 60
   local result = {}
-  local playerNorm = NormalizeName and NormalizeName(UnitName and UnitName('player') or '') or ''
+  local playerNorm = UltraFound_NormalizeName and UltraFound_NormalizeName(UnitName and UnitName('player') or '') or ''
   local directPlayerData = UltraFound_GetPlayerDisplayDataDirect and UltraFound_GetPlayerDisplayDataDirect() or {}
 
   for i, name in ipairs(group) do
-    local key = NormalizeName and NormalizeName(name) or name
+    local key = UltraFound_NormalizeName and UltraFound_NormalizeName(name) or name
     local isPlayer = key == playerNorm
     local data = isPlayer and directPlayerData or (memberData[key] or {})
     -- local mock = USE_GROUP_FOUND_MOCK_DATA and MOCK_MEMBERS[i]
@@ -158,42 +158,42 @@ local ROLE_TEXTURE = {
 }
 
 local function GetStoredRole(characterName)
-  if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupFoundRoles or not characterName then
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles or not characterName then
     return nil
   end
-  local key = NormalizeName and NormalizeName(characterName) or characterName
-  return GLOBAL_SETTINGS.groupFoundRoles[key]
+  local key = UltraFound_NormalizeName and UltraFound_NormalizeName(characterName) or characterName
+  return ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles[key]
 end
 
 local function SetStoredRole(characterName, role)
-  if not GLOBAL_SETTINGS or not characterName then return end
-  if not GLOBAL_SETTINGS.groupFoundRoles then
-    GLOBAL_SETTINGS.groupFoundRoles = {}
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not characterName then return end
+  if not ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles then
+    ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles = {}
   end
-  local key = NormalizeName and NormalizeName(characterName) or characterName
-  GLOBAL_SETTINGS.groupFoundRoles[key] = role
-  if SaveCharacterSettings then
-    SaveCharacterSettings(GLOBAL_SETTINGS)
+  local key = UltraFound_NormalizeName and UltraFound_NormalizeName(characterName) or characterName
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles[key] = role
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 end
 
 local function GetStoredOffSpec(characterName)
-  if not GLOBAL_SETTINGS or not GLOBAL_SETTINGS.groupFoundOffSpecRoles or not characterName then
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles or not characterName then
     return nil
   end
-  local key = NormalizeName and NormalizeName(characterName) or characterName
-  return GLOBAL_SETTINGS.groupFoundOffSpecRoles[key]
+  local key = UltraFound_NormalizeName and UltraFound_NormalizeName(characterName) or characterName
+  return ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles[key]
 end
 
 local function SetStoredOffSpec(characterName, role)
-  if not GLOBAL_SETTINGS or not characterName then return end
-  if not GLOBAL_SETTINGS.groupFoundOffSpecRoles then
-    GLOBAL_SETTINGS.groupFoundOffSpecRoles = {}
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not characterName then return end
+  if not ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles then
+    ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles = {}
   end
-  local key = NormalizeName and NormalizeName(characterName) or characterName
-  GLOBAL_SETTINGS.groupFoundOffSpecRoles[key] = role
-  if SaveCharacterSettings then
-    SaveCharacterSettings(GLOBAL_SETTINGS)
+  local key = UltraFound_NormalizeName and UltraFound_NormalizeName(characterName) or characterName
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles[key] = role
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 end
 

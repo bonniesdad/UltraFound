@@ -215,21 +215,21 @@ local function ParseStatsMessage(msg)
 end
 
 local function StoreMemberData(normalizedName, data)
-  if not GLOBAL_SETTINGS or not normalizedName then
-    SyncLog('StoreMemberData skipped', 'missing GLOBAL_SETTINGS or normalizedName')
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not normalizedName then
+    SyncLog('StoreMemberData skipped', 'missing ULTRA_FOUND_GLOBAL_SETTINGS or normalizedName')
     return
   end
-  if not GLOBAL_SETTINGS.groupFoundMemberData then
-    GLOBAL_SETTINGS.groupFoundMemberData = {}
+  if not ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData then
+    ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData = {}
   end
-  local existing = GLOBAL_SETTINGS.groupFoundMemberData[normalizedName]
+  local existing = ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData[normalizedName]
   if existing and existing.equipment and (not data.equipment or next(data.equipment) == nil) then
     data.equipment = existing.equipment
   end
-  GLOBAL_SETTINGS.groupFoundMemberData[normalizedName] = data
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData[normalizedName] = data
   SyncLog('StoreMemberData stored', '%s L%d %s', normalizedName, data.level or 0, data.class or '?')
-  if SaveCharacterSettings then
-    SaveCharacterSettings(GLOBAL_SETTINGS)
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 end
 
@@ -244,7 +244,7 @@ end
 
 local function BuildOurTeamForGuildSync()
   local members = {}
-  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local memberData = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData) or {}
   local playerName = UnitName and UnitName('player')
   if not playerName then return nil, 0 end
 
@@ -254,9 +254,9 @@ local function BuildOurTeamForGuildSync()
     class = (UnitClass and select(1, UnitClass('player'))) or '—',
     level = UnitLevel and UnitLevel('player') or nil,
   })
-  for _, name in ipairs(GLOBAL_SETTINGS.groupFoundNames or {}) do
+  for _, name in ipairs(ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames or {}) do
     if name and name ~= '' then
-      local key = NormalizeName and NormalizeName(name) or string.lower(name or '')
+      local key = UltraFound_NormalizeName and UltraFound_NormalizeName(name) or string.lower(name or '')
       local d = memberData[key] or {}
       table.insert(members, {
         name = name,
@@ -279,7 +279,7 @@ local function BuildOurTeamForGuildSync()
           local _, _, _, _, _, nm, _ = GetPlayerInfoByGUID(guid)
           n = nm or ''
         end
-        local norm = NormalizeName and NormalizeName(n) or string.lower(n or '')
+        local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(n) or string.lower(n or '')
         if norm and norm ~= '' then
           local lvl = (guid == currentGUID) and currentLevel or nil
           local pts = calculatePoints(lvl or 0, stats.enemiesSlain or 0, stats.dungeonsCompleted or 0, stats.goldGained or 0)
@@ -291,7 +291,7 @@ local function BuildOurTeamForGuildSync()
 
   local totalPoints = 0
   for _, m in ipairs(members) do
-    local norm = NormalizeName and NormalizeName(m.name) or string.lower(m.name or '')
+    local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(m.name) or string.lower(m.name or '')
     local pts = nameToPoints[norm] or 0
     m.points = pts
     totalPoints = totalPoints + pts
@@ -350,7 +350,7 @@ function UltraFound_GetTeamCanonicalKey(members)
   for _, m in ipairs(members) do
     local n = m and (m.name or m)
     if n and n ~= '' then
-      local norm = NormalizeName and NormalizeName(n) or string.lower(tostring(n))
+      local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(n) or string.lower(tostring(n))
       if norm ~= '' then table.insert(names, norm) end
     end
   end
@@ -359,12 +359,12 @@ function UltraFound_GetTeamCanonicalKey(members)
 end
 
 local function StoreGuildTeamData(sender, teamData)
-  if not GLOBAL_SETTINGS or not sender or not teamData or not teamData.members or #teamData.members == 0 then
-    SyncLog('StoreGuildTeamData skipped', 'missing GLOBAL_SETTINGS, sender or teamData')
+  if not ULTRA_FOUND_GLOBAL_SETTINGS or not sender or not teamData or not teamData.members or #teamData.members == 0 then
+    SyncLog('StoreGuildTeamData skipped', 'missing ULTRA_FOUND_GLOBAL_SETTINGS, sender or teamData')
     return
   end
-  if not GLOBAL_SETTINGS.guildTeamsData then
-    GLOBAL_SETTINGS.guildTeamsData = {}
+  if not ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData then
+    ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData = {}
   end
   local canonicalKey = UltraFound_GetTeamCanonicalKey(teamData.members)
   if canonicalKey == '' then return end
@@ -372,28 +372,28 @@ local function StoreGuildTeamData(sender, teamData)
   -- Find best existing entry for this team (same member set, any sender)
   local best = { senderName = sender, members = teamData.members, totalPoints = teamData.totalPoints or 0 }
   local incomingPts = teamData.totalPoints or 0
-  for k, v in pairs(GLOBAL_SETTINGS.guildTeamsData) do
+  for k, v in pairs(ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData) do
     if v and v.members and UltraFound_GetTeamCanonicalKey(v.members) == canonicalKey then
       local existingPts = v.totalPoints or 0
       if existingPts > incomingPts then
         best = v
         incomingPts = existingPts
       end
-      GLOBAL_SETTINGS.guildTeamsData[k] = nil
+      ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData[k] = nil
     end
   end
 
-  GLOBAL_SETTINGS.guildTeamsData[canonicalKey] = best
+  ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData[canonicalKey] = best
   SyncLog('StoreGuildTeamData stored', '%s: %d members, %d pts (key=%s)', best.senderName, #best.members, best.totalPoints, canonicalKey)
-  if SaveCharacterSettings then
-    SaveCharacterSettings(GLOBAL_SETTINGS)
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 end
 
 local function SendGuildTeamStats()
   SyncLog('SendGuildTeamStats called')
-  if not GLOBAL_SETTINGS then
-    SyncLog('SendGuildTeamStats early exit', 'no GLOBAL_SETTINGS')
+  if not ULTRA_FOUND_GLOBAL_SETTINGS then
+    SyncLog('SendGuildTeamStats early exit', 'no ULTRA_FOUND_GLOBAL_SETTINGS')
     return
   end
   -- Classic: GetGuildInfo("player") returns guild name if in guild, nil otherwise
@@ -454,7 +454,7 @@ local function SendMyStats()
     return
   end
   local data = GetPlayerStatsForSync()
-  StoreMemberData(NormalizeName(myName), data)
+  StoreMemberData(UltraFound_NormalizeName(myName), data)
   local msg = SerializeStats(data)
   if not msg then
     SyncLog('SendMyStats early exit', 'SerializeStats returned nil')
@@ -522,14 +522,14 @@ frame:SetScript('OnEvent', function(self, event, ...)
         SendMyStats()
         return
       end
-      if not IsAllowedByGroupList then
-        SyncLog('PARTY msg ignored', 'IsAllowedByGroupList not available')
+      if not UltraFound_IsAllowedByGroupList then
+        SyncLog('PARTY msg ignored', 'UltraFound_IsAllowedByGroupList not available')
         return
       end
-      if not IsAllowedByGroupList(sender) then
-        local list = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+      if not UltraFound_IsAllowedByGroupList(sender) then
+        local list = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames) or {}
         local listStr = table.concat(list, ', ')
-        local normSender = NormalizeName and NormalizeName(sender) or sender
+        local normSender = UltraFound_NormalizeName and UltraFound_NormalizeName(sender) or sender
         SyncLog('PARTY msg ignored', 'sender %s (norm=%s) not in group list [%s]', sender, tostring(normSender), listStr)
         return
       end
@@ -545,7 +545,7 @@ frame:SetScript('OnEvent', function(self, event, ...)
       SyncLog('PARTY parsed', 'sender=%s race=%s class=%s level=%s pr1=%s pr2=%s equipSlots=%d',
         sender, tostring(data.race), tostring(data.class), tostring(data.level),
         p1 and (p1.name or '') or 'nil', p2 and (p2.name or '') or 'nil', equipCount)
-      StoreMemberData(NormalizeName(sender), data)
+      StoreMemberData(UltraFound_NormalizeName(sender), data)
     elseif channel == 'GUILD' then
       local teamData = ParseGuildTeamMessage(msg)
       if not teamData then

@@ -24,15 +24,15 @@ function UltraFound_CreatePatchNotesDisplay(parent, width, height, xOffset, yOff
   end
 
   -- Use _G to ensure we read our addon's table at display time (not overwritten by load order)
-  local notes = (_G.UltraFound_PATCH_NOTES and type(_G.UltraFound_PATCH_NOTES) == 'table') and _G.UltraFound_PATCH_NOTES or {}
+  local notes = (_G.ULTRA_FOUND_PATCH_NOTES and type(_G.ULTRA_FOUND_PATCH_NOTES) == 'table') and _G.ULTRA_FOUND_PATCH_NOTES or {}
   local yOffset = 0
   for i, patch in ipairs(notes) do
     -- Only skip if patch has an explicit expansion that doesn't match; no expansion = show everywhere
     local shouldSkip = false
     if patch.expansion then
-      if patch.expansion == 'TBC' and IsTBC and not IsTBC() then
+      if patch.expansion == 'TBC' and UltraFound_IsTBC and not UltraFound_IsTBC() then
         shouldSkip = true
-      elseif patch.expansion == 'Classic' and IsTBC and IsTBC() then
+      elseif patch.expansion == 'Classic' and UltraFound_IsTBC and UltraFound_IsTBC() then
         shouldSkip = true
       end
     end
