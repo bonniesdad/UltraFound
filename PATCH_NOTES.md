@@ -1,5 +1,11 @@
 # Patch Notes
 
+## 1.2.0 (2026-02-28)
+
+**BUG FIXES:**
+
+Remove duplicate function naming with sister addons (ultra hardcore and statistics)
+
 ## 1.1.0 (2026-02-26)
 
 **BUG FIXES:**

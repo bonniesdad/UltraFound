@@ -9,7 +9,7 @@ local statusText
 local formElements = {}
 
 local function IsGroupLocked()
-  return GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundLocked
+  return ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundLocked
 end
 
 local function SetInputsEnabled(enabled)
@@ -37,7 +37,7 @@ local function SetInputsEnabled(enabled)
 end
 
 local function LoadExistingGroupIntoInputs()
-  local names = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+  local names = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames) or {}
   for i, box in ipairs(groupInputs) do
     box:SetText(names[i] or '')
   end
@@ -69,7 +69,7 @@ local function PopulateFromParty()
 end
 
 local function ConfirmGroup()
-  if not GLOBAL_SETTINGS then
+  if not ULTRA_FOUND_GLOBAL_SETTINGS then
     print('|cffffd000[Ultra Found]|r Settings not loaded. Try again in a moment.')
     return
   end
@@ -93,12 +93,12 @@ local function ConfirmGroup()
     return
   end
 
-  GLOBAL_SETTINGS.groupFoundNames = names
-  GLOBAL_SETTINGS.guildSelfFound = false
-  GLOBAL_SETTINGS.groupFoundLocked = true
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames = names
+  ULTRA_FOUND_GLOBAL_SETTINGS.guildSelfFound = false
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundLocked = true
 
-  if SaveCharacterSettings then
-    SaveCharacterSettings(GLOBAL_SETTINGS)
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 
   print(

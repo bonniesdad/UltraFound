@@ -1,5 +1,5 @@
 -- Helper: normalize name to character name without realm and lowercase
-function NormalizeName(name)
+function UltraFound_NormalizeName(name)
   if not name then
     return nil
   end

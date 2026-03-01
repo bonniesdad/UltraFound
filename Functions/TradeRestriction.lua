@@ -1,15 +1,15 @@
 -- Trade/mail/auction restriction logic for Self Found, Group Found, Guild Found.
--- Uses NormalizeName (from Utils) and GLOBAL_SETTINGS from LoadDBData.
+-- Uses UltraFound_NormalizeName (from Utils) and ULTRA_FOUND_GLOBAL_SETTINGS from UltraFound_LoadDBData.
 
 -- Helper: check if a name is allowed by the saved group list
-function IsAllowedByGroupList(name)
-  local normalized = NormalizeName(name)
+function UltraFound_IsAllowedByGroupList(name)
+  local normalized = UltraFound_NormalizeName(name)
   if not normalized then
     return false
   end
-  local list = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundNames) or {}
+  local list = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames) or {}
   for _, allowed in ipairs(list) do
-    if NormalizeName(allowed) == normalized then
+    if UltraFound_NormalizeName(allowed) == normalized then
       return true
     end
   end
@@ -82,7 +82,7 @@ frame:SetScript('OnEvent', function(self, event, ...)
     for i = GetInboxNumItems(), 1, -1 do
       local _, _, sender, _, _, _, _, _, _, _, _, isGM = GetInboxHeaderInfo(i)
       if sender and not isGM then
-        local allowed = IsAllowedByGroupList(sender)
+        local allowed = UltraFound_IsAllowedByGroupList(sender)
         if not allowed then
           local reason = 'not on my Group Found list'
           print(
@@ -107,7 +107,7 @@ frame:SetScript('OnEvent', function(self, event, ...)
       return
     end
     if inGroupFound then
-      if not IsAllowedByGroupList(targetName) then
+      if not UltraFound_IsAllowedByGroupList(targetName) then
         CancelTradeForReason(
           'Trade with ' .. targetName .. ' cancelled - not on my Group Found list.'
         )

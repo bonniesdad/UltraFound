@@ -3,7 +3,7 @@
 
 local TEXTURE_PATH = 'Interface\\AddOns\\UltraFound\\Textures'
 
-function UHC_CreateAboutAuthorSection(parent, point, relativeTo, relativePoint, xOfs, yOfs, width)
+function UltraFound_CreateAboutAuthorSection(parent, point, relativeTo, relativePoint, xOfs, yOfs, width)
   width = width or 440
 
   local aboutAuthorFrame = CreateFrame('Frame', nil, parent)

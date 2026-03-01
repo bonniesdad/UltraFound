@@ -1,4 +1,4 @@
-function IsTBC()
+function UltraFound_IsTBC()
   if GetExpansionLevel and GetExpansionLevel() > 0 then
     return true
   end
@@ -6,5 +6,5 @@ function IsTBC()
 end
 
 function IsClassic()
-  return not IsTBC()
+  return not UltraFound_IsTBC()
 end

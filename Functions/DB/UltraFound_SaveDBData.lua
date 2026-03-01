@@ -1,5 +1,5 @@
 -- Save settings for current character
-function SaveCharacterSettings(settings)
+function UltraFound_SaveCharacterSettings(settings)
   local characterGUID = UnitGUID('player')
 
   if not UltraFoundDB.characterSettings then

@@ -120,7 +120,7 @@ local function getTeamNames()
   if playerName and playerName ~= '' then
     table.insert(names, playerName)
   end
-  for _, name in ipairs(GLOBAL_SETTINGS.groupFoundNames or {}) do
+  for _, name in ipairs(ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames or {}) do
     if name and name ~= '' then
       table.insert(names, name)
     end
@@ -160,17 +160,17 @@ end
 local function buildTeamLeaderboardData()
   local allData = buildLeaderboardData()
   local teamNames = getTeamNames()
-  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local memberData = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData) or {}
   if #teamNames == 0 then return allData end
   local nameToRow = {}
   for _, row in ipairs(allData) do
-    local norm = NormalizeName and NormalizeName(row.name) or string.lower(row.name or '')
+    local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(row.name) or string.lower(row.name or '')
     if norm ~= '' then nameToRow[norm] = row end
   end
-  local playerNorm = NormalizeName and NormalizeName(UnitName and UnitName('player') or '') or ''
+  local playerNorm = UltraFound_NormalizeName and UltraFound_NormalizeName(UnitName and UnitName('player') or '') or ''
   local result = {}
   for _, name in ipairs(teamNames) do
-    local norm = NormalizeName and NormalizeName(name) or string.lower(name or '')
+    local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(name) or string.lower(name or '')
     local isPlayer = norm == playerNorm
     local row = nameToRow[norm]
     -- For our own character: always use UltraStatisticsDB directly, never synced data
@@ -249,7 +249,7 @@ end
 local function buildGuildLeaderboardData()
   -- Returns array of teams: { senderName?, members = [...], totalPoints }
   local teams = {}
-  local memberData = (GLOBAL_SETTINGS and GLOBAL_SETTINGS.groupFoundMemberData) or {}
+  local memberData = (ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundMemberData) or {}
 
   -- Our team
   local db = _G.UltraStatisticsDB
@@ -260,7 +260,7 @@ local function buildGuildLeaderboardData()
     for guid, stats in pairs(db.characterStats) do
       if stats and type(stats) == 'table' then
         local name = getCharacterName(guid)
-        local norm = NormalizeName and NormalizeName(name) or string.lower(name or '')
+        local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(name) or string.lower(name or '')
         if norm and norm ~= '' then
           local level = (guid == currentGUID) and currentLevel or nil
           local pts = calculatePoints(level or 0, stats.enemiesSlain or 0, stats.dungeonsCompleted or 0, stats.goldGained or 0)
@@ -273,7 +273,7 @@ local function buildGuildLeaderboardData()
   local ourMembers = {}
   local playerName = UnitName and UnitName('player')
   if playerName then
-    local norm = NormalizeName and NormalizeName(playerName) or string.lower(playerName or '')
+    local norm = UltraFound_NormalizeName and UltraFound_NormalizeName(playerName) or string.lower(playerName or '')
     table.insert(ourMembers, {
       name = playerName,
       race = (UnitRace and select(1, UnitRace('player'))) or '—',
@@ -282,9 +282,9 @@ local function buildGuildLeaderboardData()
       points = nameToPoints[norm] or 0,
     })
   end
-  for _, name in ipairs(GLOBAL_SETTINGS.groupFoundNames or {}) do
+  for _, name in ipairs(ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames or {}) do
     if name and name ~= '' then
-      local key = NormalizeName and NormalizeName(name) or string.lower(name or '')
+      local key = UltraFound_NormalizeName and UltraFound_NormalizeName(name) or string.lower(name or '')
       local data = memberData[key] or {}
       local pts = nameToPoints[key]
       if pts == nil and data.enemiesSlain then
@@ -310,7 +310,7 @@ local function buildGuildLeaderboardData()
   end
 
   -- Teams from guild addon messages (deduped by canonical member set)
-  local guildTeams = GLOBAL_SETTINGS and GLOBAL_SETTINGS.guildTeamsData or {}
+  local guildTeams = ULTRA_FOUND_GLOBAL_SETTINGS and ULTRA_FOUND_GLOBAL_SETTINGS.guildTeamsData or {}
   local ourTeamCanonicalKey = UltraFound_GetTeamCanonicalKey and UltraFound_GetTeamCanonicalKey(ourMembers) or ''
   for key, team in pairs(guildTeams) do
     if team and team.members and #team.members > 0 then
@@ -556,8 +556,8 @@ function UltraFound_InitializeLeaderboardsTab(tabContents)
         card:SetPoint('LEFT', guildScrollChild, 'LEFT', 0, 0)
         card:SetPoint('RIGHT', guildScrollChild, 'RIGHT', 0, 0)
         local hasTeamLabel = false
-        local myNorm = NormalizeName and NormalizeName(playerName) or string.lower(playerName or '')
-        local senderNorm = senderName and (NormalizeName and NormalizeName(senderName) or string.lower(senderName or ''))
+        local myNorm = UltraFound_NormalizeName and UltraFound_NormalizeName(playerName) or string.lower(playerName or '')
+        local senderNorm = senderName and (UltraFound_NormalizeName and UltraFound_NormalizeName(senderName) or string.lower(senderName or ''))
         if senderName and senderNorm ~= myNorm then
           hasTeamLabel = true
         end
