@@ -124,20 +124,46 @@ local function ConfirmGroup()
   end
 end
 
-function UltraFound_InitializeXFoundModeTab(tabContents)
-  if not tabContents or not tabContents[1] then return end
-  if tabContents[1].initialized then return end
-  tabContents[1].initialized = true
+-- Clears all team members and returns to the setup form. Called after "Remove All" confirmation.
+function UltraFound_ResetToGroupFoundSetup(content)
+  if not content then return end
+  if not ULTRA_FOUND_GLOBAL_SETTINGS then return end
 
-  local content = tabContents[1]
-
-  -- If the group is already locked for this character, show the
-  -- summary/overview layout instead of the setup form.
-  if IsGroupLocked() and UltraFound_CreateGroupFoundSummary then
-    UltraFound_CreateGroupFoundSummary(content)
-    return
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundNames = {}
+  ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundLocked = false
+  if ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles then
+    ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundRoles = {}
+  end
+  if ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles then
+    ULTRA_FOUND_GLOBAL_SETTINGS.groupFoundOffSpecRoles = {}
+  end
+  if UltraFound_SaveCharacterSettings then
+    UltraFound_SaveCharacterSettings(ULTRA_FOUND_GLOBAL_SETTINGS)
   end
 
+  -- Clear summary children
+  local children = { content:GetChildren() }
+  for i = #children, 1, -1 do
+    local child = children[i]
+    if child and child.ClearAllPoints then
+      child:ClearAllPoints()
+      child:SetParent(nil)
+      child:Hide()
+    end
+  end
+
+  -- Force full tab re-init so the setup form renders correctly (avoids blank screen)
+  if UltraFound_ForceRefreshXFoundModeTab then
+    UltraFound_ForceRefreshXFoundModeTab()
+  else
+    groupInputs = {}
+    formElements = {}
+    CreateGroupFoundSetupForm(content)
+    content:Show()
+  end
+end
+
+local function CreateGroupFoundSetupForm(content)
   local title = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
   title:SetPoint('TOP', content, 'TOP', 0, -60)
   title:SetText('Group Found Setup')
@@ -145,7 +171,6 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   table.insert(formElements, title)
 
   local description = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
-  -- Slightly offset left so it visually centers with the form below
   description:SetPoint('TOP', title, 'BOTTOM', 0, -10)
   description:SetWidth(380)
   description:SetJustifyH('CENTER')
@@ -157,17 +182,12 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
   description:SetTextColor(0.9, 0.9, 0.9)
   table.insert(formElements, description)
 
-  -- Create input boxes, positioned relative to the description text
-  -- so the whole form sits cleanly below the copy.
-  -- We only need fields for your group-mates.
-  -- Your own character is always implicitly part of the group, so we keep 4 inputs.
   local NUM_FIELDS = 4
   local fieldGap = 32
-  local startYOffset = -40 -- distance from bottom of description to first row
+  local startYOffset = -40
 
   for i = 1, NUM_FIELDS do
     local label = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
-    -- Anchor labels relative to the center so the whole form is visually centered
     label:SetPoint('TOP', description, 'BOTTOM', -120, startYOffset - (i - 1) * fieldGap)
     label:SetText('Character ' .. i .. ':')
     label:SetTextColor(0.8, 0.8, 0.8)
@@ -185,45 +205,45 @@ function UltraFound_InitializeXFoundModeTab(tabContents)
 
   local lastBox = groupInputs[NUM_FIELDS]
 
-  -- Status text (lock information)
   statusText = content:CreateFontString(nil, 'OVERLAY', 'GameFontHighlightSmall')
   statusText:SetPoint('TOP', lastBox, 'BOTTOM', -36, -18)
   statusText:SetWidth(380)
   statusText:SetJustifyH('CENTER')
-  statusText:SetTextColor(0.7, 0.7, 0.7)
+  statusText:SetTextColor(0.7, 0.9, 0.7)
+  statusText:SetText('You can edit this list until you press Confirm Group.')
   table.insert(formElements, statusText)
 
-  -- Buttons
-
-  addPartyButton =
-    CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
+  addPartyButton = CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
   addPartyButton:SetSize(140, 22)
-  -- Centered horizontally just under the status text (lock/info text),
-  -- nudged slightly left to visually align with the text block
   addPartyButton:SetPoint('TOP', statusText, 'BOTTOM', 0, -10)
   addPartyButton:SetText('Add Party Members')
   addPartyButton:SetScript('OnClick', PopulateFromParty)
   table.insert(formElements, addPartyButton)
 
-  confirmButton =
-    CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
+  confirmButton = CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
   confirmButton:SetSize(160, 24)
-  -- Centered horizontally near the bottom of the tab
   confirmButton:SetPoint('BOTTOM', content, 'BOTTOM', 0, 0)
   confirmButton:SetText('Confirm Group')
   confirmButton:SetScript('OnClick', ConfirmGroup)
   table.insert(formElements, confirmButton)
 
-  -- Initialize from existing data
-  LoadExistingGroupIntoInputs()
+  SetInputsEnabled(true)
+end
 
-  if IsGroupLocked() then
-    statusText:SetText('Group Found is locked for this character.\nThese names cannot be changed.')
-    statusText:SetTextColor(0.9, 0.7, 0.2)
-    SetInputsEnabled(false)
-  else
-    statusText:SetText('You can edit this list until you press Confirm Group.')
-    statusText:SetTextColor(0.7, 0.9, 0.7)
-    SetInputsEnabled(true)
+function UltraFound_InitializeXFoundModeTab(tabContents)
+  if not tabContents or not tabContents[1] then return end
+  if tabContents[1].initialized then return end
+  tabContents[1].initialized = true
+
+  local content = tabContents[1]
+
+  -- If the group is already locked for this character, show the
+  -- summary/overview layout instead of the setup form.
+  if IsGroupLocked() and UltraFound_CreateGroupFoundSummary then
+    UltraFound_CreateGroupFoundSummary(content)
+    return
   end
+
+  CreateGroupFoundSetupForm(content)
+  LoadExistingGroupIntoInputs()
 end

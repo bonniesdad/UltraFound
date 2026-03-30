@@ -1,6 +1,14 @@
 -- Patch notes for Ultra Found addon (addon-scoped so Ultra Hardcore cannot overwrite)
 ULTRA_FOUND_PATCH_NOTES = { 
   {
+    version = '1.3.0',
+    date = '2026-03-17',
+    notes = {
+      'NEW FEATURES:',
+      '• Add Remove All button to Group Found summary.',
+    },
+  },
+  {
     version = '1.2.0',
     date = '2026-02-28',
     notes = {

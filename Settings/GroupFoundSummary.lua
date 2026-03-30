@@ -204,6 +204,33 @@ local function GetRoleTexture(role)
   return ROLE_TEXTURE.DPS -- default display until selected
 end
 
+-- Pending data for Remove All confirmation dialog
+local pendingRemoveAll = nil
+
+-- Confirmation dialog for removing all team members
+StaticPopupDialogs['ULTRA_FOUND_REMOVE_ALL'] = {
+  text = 'Remove all team members and return to setup? This will clear your group and cannot be undone.',
+  button1 = 'Remove All',
+  button2 = 'Cancel',
+  OnAccept = function()
+    local data = pendingRemoveAll
+    pendingRemoveAll = nil
+    StaticPopup_Hide('ULTRA_FOUND_REMOVE_ALL')
+    if data and data.content and UltraFound_ResetToGroupFoundSetup then
+      if C_Timer and C_Timer.After then
+        C_Timer.After(0, function()
+          UltraFound_ResetToGroupFoundSetup(data.content)
+        end)
+      else
+        UltraFound_ResetToGroupFoundSetup(data.content)
+      end
+    end
+  end,
+  timeout = 0,
+  hideOnEscape = true,
+  preferredIndex = 3,
+}
+
 -- Sort order for list: Tank, Healer, DPS, then no role
 local ROLE_SORT_ORDER = { TANK = 1, HEALER = 2, DPS = 3 }
 
@@ -323,7 +350,25 @@ function UltraFound_CreateGroupFoundSummary(parent)
   end
 
   local title = content:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
-  title:SetPoint('TOP', content, 'TOP', 0, -40)
+  title:SetPoint('TOP', content, 'TOP', 0, -48)
+
+  local removeAllBtn = CreateFrame('Button', nil, content, 'UIPanelButtonTemplate')
+  removeAllBtn:SetSize(100, 22)
+  removeAllBtn:SetPoint('TOPRIGHT', content, 'TOPRIGHT', -10, -42)
+  removeAllBtn:SetText('Remove All')
+  removeAllBtn:SetScript('OnClick', function()
+    pendingRemoveAll = { content = content }
+    StaticPopup_Show('ULTRA_FOUND_REMOVE_ALL')
+  end)
+  removeAllBtn:SetScript('OnEnter', function(self)
+    if GameTooltip and GameTooltip.SetOwner then
+      GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
+      GameTooltip:SetText('Remove all team members and return to the setup form', 1, 1, 1)
+    end
+  end)
+  removeAllBtn:SetScript('OnLeave', function()
+    if GameTooltip then GameTooltip:Hide() end
+  end)
 
   local groupData, maxLevel = BuildGroupData()
   SortGroupDataByRole(groupData)
@@ -388,13 +433,14 @@ function UltraFound_CreateGroupFoundSummary(parent)
   end
 
   local previous = title
+  local firstCardGap = -15  -- extra padding below button row
 
   for index, member in ipairs(groupData) do
     local frame =
       CreateFrame('Frame', nil, content, 'BackdropTemplate')
     -- Height fits name, level, talent spec, professions, and equipment grid (5 rows of 18px + gaps)
     frame:SetSize(520, 12 + (5 * 18 + 4 * 2) + 12)
-    frame:SetPoint('TOP', previous, 'BOTTOM', 0, -10)
+    frame:SetPoint('TOP', previous, 'BOTTOM', 0, index == 1 and firstCardGap or -10)
     frame:SetBackdrop({
       edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
       edgeSize = 12,

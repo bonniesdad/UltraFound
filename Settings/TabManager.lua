@@ -191,6 +191,16 @@ function UltraFound_GetActiveTab()
   return activeTab
 end
 
+-- Force re-initialize the X Found Mode tab (e.g. after Remove All)
+function UltraFound_ForceRefreshXFoundModeTab()
+  if tabContents[1] then
+    tabContents[1].initialized = false
+    if UltraFound_InitializeXFoundModeTab then
+      UltraFound_InitializeXFoundModeTab(tabContents)
+    end
+  end
+end
+
 function UltraFound_GetTabContent(index)
   return tabContents[index]
 end
